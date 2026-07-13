@@ -436,26 +436,35 @@ $('btnExport').addEventListener('click', () => {
 
 function formatInputOnType(e) {
   const input = e.target;
-  let selectionStart = input.selectionStart;
+  let rawVal = input.value.replace(/\D/g, '');
   
-  const valBefore = input.value;
-  const dotCountBefore = (valBefore.substring(0, selectionStart).match(/\./g) || []).length;
-  
-  let numericString = valBefore.replace(/\D/g, '');
-  
-  if (numericString === '') {
+  if (rawVal === '') {
     input.value = '';
     return;
   }
   
-  let formatted = Number(numericString).toLocaleString('vi-VN');
+  // Lấy phần số thực tế trước 3 số 0 cuối cùng (nếu có)
+  let cleanNumberStr = rawVal;
+  if (rawVal.length > 3 && rawVal.endsWith('000')) {
+    cleanNumberStr = rawVal.slice(0, -3);
+  }
+  
+  // Nếu phần số thực tế chỉ gồm số 0 hoặc trống, xóa sạch input
+  if (cleanNumberStr === '' || /^0+$/.test(cleanNumberStr)) {
+    input.value = '';
+    return;
+  }
+  
+  // Tự động thêm 3 số 0 vào sau
+  let finalValueStr = cleanNumberStr + '000';
+  let formatted = Number(finalValueStr).toLocaleString('vi-VN');
   input.value = formatted;
   
-  const dotCountAfter = (formatted.substring(0, selectionStart).match(/\./g) || []).length;
-  let newCursorPosition = selectionStart + (dotCountAfter - dotCountBefore);
-  newCursorPosition = Math.max(0, Math.min(newCursorPosition, formatted.length));
+  // Đặt con trỏ chuột luôn ở trước 3 số 0 cuối cùng (.000 chiếm 4 ký tự cuối)
+  let cursorPosition = formatted.length - 4;
+  if (cursorPosition < 0) cursorPosition = 0;
   
-  input.setSelectionRange(newCursorPosition, newCursorPosition);
+  input.setSelectionRange(cursorPosition, cursorPosition);
 }
 
 // ── Live preview wiring (after DOM ready) ────────────
