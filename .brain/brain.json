@@ -1,0 +1,128 @@
+{
+  "meta": {
+    "schema_version": "1.1.0",
+    "awf_version": "4.0.2",
+    "last_updated": "2026-07-13T14:41:00+07:00",
+    "project_path": "f:/Project/Doanhthu"
+  },
+  "project": {
+    "name": "Dashboard Doanh Thu",
+    "type": "web_app",
+    "status": "active",
+    "description": "Web dashboard nhập và theo dõi doanh thu nhà hàng + thuốc theo ngày/tháng. Có thể deploy lên domain để truy cập từ xa.",
+    "started": "2026-07-13",
+    "port": 5001
+  },
+  "tech_stack": {
+    "backend": {
+      "framework": "Flask",
+      "language": "Python 3.11",
+      "port": 5001,
+      "entry": "app.py"
+    },
+    "frontend": {
+      "html": "Jinja2 templates",
+      "css": "Vanilla CSS (dark mode premium)",
+      "js": "Vanilla JS (fetch API)",
+      "charts": "Chart.js 4.4.0",
+      "fonts": "Google Fonts (Inter)"
+    },
+    "storage": {
+      "type": "JSON files",
+      "location": "data/records/",
+      "format": "YYYY-MM.json per month"
+    },
+    "export": "openpyxl (Excel export)"
+  },
+  "data_schema": {
+    "summary": "Mỗi tháng lưu 1 file JSON chứa doanh thu nhà hàng và thuốc theo ngày",
+    "file_pattern": "data/records/YYYY-MM.json",
+    "structure": {
+      "month": "YYYY-MM",
+      "nha_hang": [
+        {
+          "ngay": "1.7",
+          "sang": "Doanh thu ca sáng (VND)",
+          "toi": "Doanh thu ca tối (VND)",
+          "tien_ck": "Tiền CK tài khoản chính (VND)",
+          "tien_ck_thuoc": "Tiền CK tài khoản thuốc (VND)",
+          "tien_ck_dungcu": "Tiền CK tài khoản dụng cụ (VND)",
+          "tien_tra_hang": "Tiền trả nhà cung cấp (VND)",
+          "tong": "= sang + toi + tien_ck + tien_ck_thuoc + tien_ck_dungcu"
+        }
+      ],
+      "thuoc": [
+        {
+          "ngay": "1.7",
+          "ca1": "6h30-13h (VND)",
+          "ca2": "13h-17h (VND)",
+          "ca3": "17h-20h (VND)",
+          "ca4": "20h-22h30 (VND)",
+          "ck": "Tiền CK (VND)",
+          "tra_them": "Tiền trả thêm (VND)",
+          "tong": "= ca1 + ca2 + ca3 + ca4 + ck"
+        }
+      ]
+    }
+  },
+  "api_endpoints": [
+    { "method": "GET",    "path": "/",                                    "explained": "Dashboard chính - trang nhập liệu" },
+    { "method": "GET",    "path": "/report",                              "explained": "Trang báo cáo biểu đồ Chart.js" },
+    { "method": "GET",    "path": "/api/records/<YYYY-MM>",               "explained": "Lấy toàn bộ dữ liệu tháng (nha_hang + thuoc)" },
+    { "method": "POST",   "path": "/api/records/<YYYY-MM>/nha_hang",      "explained": "Thêm hoặc cập nhật 1 ngày nhà hàng" },
+    { "method": "POST",   "path": "/api/records/<YYYY-MM>/thuoc",         "explained": "Thêm hoặc cập nhật 1 ngày thuốc" },
+    { "method": "DELETE", "path": "/api/records/<month>/<type>/<ngay>",   "explained": "Xóa 1 dòng dữ liệu" },
+    { "method": "GET",    "path": "/api/summary/<YYYY-MM>",               "explained": "KPI tóm tắt: tổng tháng, TB ngày, ngày cao nhất" },
+    { "method": "GET",    "path": "/api/months",                          "explained": "Danh sách các tháng đã có dữ liệu" },
+    { "method": "GET",    "path": "/api/export/<YYYY-MM>",                "explained": "Download file Excel tháng đó" },
+    { "method": "GET",    "path": "/api/report",                          "explained": "Dữ liệu 6 tháng gần nhất cho trang báo cáo" }
+  ],
+  "features": [
+    { "name": "Tab Nhà Hàng / Thuốc", "status": "done", "description": "Switch giữa 2 loại doanh thu" },
+    { "name": "Chọn tháng ◀ ▶", "status": "done", "description": "Navigate qua lại giữa các tháng" },
+    { "name": "3 KPI Cards", "status": "done", "description": "Tổng NH, Tổng Thuốc, Tổng chung" },
+    { "name": "Day Pill Selector", "status": "done", "description": "Click chọn ngày, highlight ngày đã có data" },
+    { "name": "Live Tổng Preview", "status": "done", "description": "Cập nhật tổng realtime khi nhập số" },
+    { "name": "CRUD dữ liệu", "status": "done", "description": "Thêm, sửa, xóa từng ngày" },
+    { "name": "Export Excel", "status": "done", "description": "Tải về file .xlsx tháng hiện tại" },
+    { "name": "Trang báo cáo", "status": "done", "description": "Bar chart theo ngày, so sánh 6 tháng, phân tích CK" },
+    { "name": "Deploy lên domain", "status": "todo", "description": "Cloudflare Tunnel hoặc VPS - user chưa quyết định" }
+  ],
+  "business_rules": [
+    "Tổng NH = Sáng + Tối + Tiền CK + Tiền CK Thuốc + Tiền CK Dụng Cụ (KHÔNG gồm Tiền Trả Hàng)",
+    "Tổng Thuốc = Ca1 + Ca2 + Ca3 + Ca4 + CK (KHÔNG gồm trả thêm)",
+    "Mỗi tháng lưu 1 file JSON: data/records/YYYY-MM.json",
+    "Dữ liệu ngày dùng format 'd.M' vd: 1.7, 15.7, 31.7",
+    "3 tài khoản CK riêng biệt: chính / thuốc / dụng cụ"
+  ],
+  "knowledge_items": {
+    "patterns": [
+      "JSON file storage per month (không dùng database hay Excel để deploy dễ hơn)",
+      "Dark mode CSS với CSS custom properties (:root variables)",
+      "Vanilla JS fetch API thay vì axios/jQuery",
+      "Flask Blueprint chưa dùng (app nhỏ, 1 file app.py là đủ)"
+    ],
+    "gotchas": [
+      "File gốc tiendumoithang.xlsb.xlsx vẫn còn trong folder - là file Excel cũ, không dùng nữa",
+      "Port 5001 (không phải 5000) để tránh conflict với TinhLuong chạy port 5000",
+      "Encoding UTF-8 quan trọng khi đọc tên sheet tiếng Việt từ Excel cũ"
+    ],
+    "conventions": [
+      "Ngày format: '1.7' không phải '01.07' hoặc '2025-07-01'",
+      "Tiền đơn vị VND nguyên (không chia 1000 như TinhLuong)",
+      "Sheet type: 'nha_hang' hoặc 'thuoc' (snake_case)"
+    ]
+  },
+  "related_projects": [
+    {
+      "name": "TinhLuong",
+      "path": "f:/Project/TinhLuong",
+      "note": "Style reference - cùng stack Flask, dark mode, tab navigation"
+    }
+  ],
+  "deploy_options": [
+    { "option": "Cloudflare Tunnel", "status": "user_not_decided", "note": "Miễn phí, dùng ngay, máy phải luôn bật" },
+    { "option": "Railway/Render",    "status": "user_not_decided", "note": "Push GitHub → auto deploy, free tier" },
+    { "option": "VPS",               "status": "user_not_decided", "note": "Bền vững nhất, cần domain riêng" }
+  ]
+}
