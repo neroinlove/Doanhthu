@@ -2,14 +2,14 @@
   "meta": {
     "schema_version": "1.1.0",
     "awf_version": "4.0.2",
-    "last_updated": "2026-07-13T14:41:00+07:00",
+    "last_updated": "2026-07-13T18:23:00+07:00",
     "project_path": "f:/Project/Doanhthu"
   },
   "project": {
     "name": "Dashboard Doanh Thu",
     "type": "web_app",
     "status": "active",
-    "description": "Web dashboard nhập và theo dõi doanh thu nhà hàng + thuốc theo ngày/tháng. Có thể deploy lên domain để truy cập từ xa.",
+    "description": "Web dashboard nhập và theo dõi doanh thu quầy thuốc theo ngày/tháng. Có thể deploy lên domain để truy cập từ xa.",
     "started": "2026-07-13",
     "port": 5001
   },
@@ -35,7 +35,7 @@
     "export": "openpyxl (Excel export)"
   },
   "data_schema": {
-    "summary": "Mỗi tháng lưu 1 file JSON chứa doanh thu nhà hàng và thuốc theo ngày",
+    "summary": "Mỗi tháng lưu 1 file JSON chứa doanh thu quầy thuốc (lưu trong nha_hang do kế thừa cấu trúc) theo ngày",
     "file_pattern": "data/records/YYYY-MM.json",
     "structure": {
       "month": "YYYY-MM",
@@ -51,26 +51,14 @@
           "tong": "= sang + toi + tien_ck + tien_ck_thuoc + tien_ck_dungcu"
         }
       ],
-      "thuoc": [
-        {
-          "ngay": "1.7",
-          "ca1": "6h30-13h (VND)",
-          "ca2": "13h-17h (VND)",
-          "ca3": "17h-20h (VND)",
-          "ca4": "20h-22h30 (VND)",
-          "ck": "Tiền CK (VND)",
-          "tra_them": "Tiền trả thêm (VND)",
-          "tong": "= ca1 + ca2 + ca3 + ca4 + ck"
-        }
-      ]
+      "thuoc": []
     }
   },
   "api_endpoints": [
     { "method": "GET",    "path": "/",                                    "explained": "Dashboard chính - trang nhập liệu" },
     { "method": "GET",    "path": "/report",                              "explained": "Trang báo cáo biểu đồ Chart.js" },
     { "method": "GET",    "path": "/api/records/<YYYY-MM>",               "explained": "Lấy toàn bộ dữ liệu tháng (nha_hang + thuoc)" },
-    { "method": "POST",   "path": "/api/records/<YYYY-MM>/nha_hang",      "explained": "Thêm hoặc cập nhật 1 ngày nhà hàng" },
-    { "method": "POST",   "path": "/api/records/<YYYY-MM>/thuoc",         "explained": "Thêm hoặc cập nhật 1 ngày thuốc" },
+    { "method": "POST",   "path": "/api/records/<YYYY-MM>/nha_hang",      "explained": "Thêm hoặc cập nhật 1 ngày quầy thuốc" },
     { "method": "DELETE", "path": "/api/records/<month>/<type>/<ngay>",   "explained": "Xóa 1 dòng dữ liệu" },
     { "method": "GET",    "path": "/api/summary/<YYYY-MM>",               "explained": "KPI tóm tắt: tổng tháng, TB ngày, ngày cao nhất" },
     { "method": "GET",    "path": "/api/months",                          "explained": "Danh sách các tháng đã có dữ liệu" },
@@ -78,10 +66,12 @@
     { "method": "GET",    "path": "/api/report",                          "explained": "Dữ liệu 6 tháng gần nhất cho trang báo cáo" }
   ],
   "features": [
-    { "name": "Tab Nhà Hàng / Thuốc", "status": "done", "description": "Switch giữa 2 loại doanh thu" },
+    { "name": "Giao diện Quầy Thuốc duy nhất", "status": "done", "description": "Ẩn các tab thừa, đổi tên hiển thị Nhà Hàng sang Quầy Thuốc" },
     { "name": "Chọn tháng ◀ ▶", "status": "done", "description": "Navigate qua lại giữa các tháng" },
-    { "name": "3 KPI Cards", "status": "done", "description": "Tổng NH, Tổng Thuốc, Tổng chung" },
+    { "name": "KPI Cards rút gọn", "status": "done", "description": "Tổng doanh thu thuốc tháng, Doanh thu trung bình ngày" },
     { "name": "Day Pill Selector", "status": "done", "description": "Click chọn ngày, highlight ngày đã có data" },
+    { "name": "Giữ dữ liệu chưa lưu (Drafts)", "status": "done", "description": "Lưu tạm dữ liệu khi chuyển ngày/tab và hiển thị dấu chấm cam" },
+    { "name": "Tự động định dạng tiền tệ", "status": "done", "description": "Tự động thêm dấu chấm hàng nghìn và đuôi .000 khi gõ" },
     { "name": "Live Tổng Preview", "status": "done", "description": "Cập nhật tổng realtime khi nhập số" },
     { "name": "CRUD dữ liệu", "status": "done", "description": "Thêm, sửa, xóa từng ngày" },
     { "name": "Export Excel", "status": "done", "description": "Tải về file .xlsx tháng hiện tại" },
@@ -89,28 +79,27 @@
     { "name": "Deploy lên domain", "status": "todo", "description": "Cloudflare Tunnel hoặc VPS - user chưa quyết định" }
   ],
   "business_rules": [
-    "Tổng NH = Sáng + Tối + Tiền CK + Tiền CK Thuốc + Tiền CK Dụng Cụ (KHÔNG gồm Tiền Trả Hàng)",
-    "Tổng Thuốc = Ca1 + Ca2 + Ca3 + Ca4 + CK (KHÔNG gồm trả thêm)",
+    "Tổng Doanh Thu = Sáng + Tối + Tiền CK + Tiền CK Thuốc + Tiền CK Dụng Cụ (KHÔNG gồm Tiền Trả Hàng)",
     "Mỗi tháng lưu 1 file JSON: data/records/YYYY-MM.json",
     "Dữ liệu ngày dùng format 'd.M' vd: 1.7, 15.7, 31.7",
-    "3 tài khoản CK riêng biệt: chính / thuốc / dụng cụ"
+    "3 tài khoản CK riêng biệt: chính / thuốc / dụng cụ",
+    "Nhập tiền tệ tự động điền đuôi .000"
   ],
   "knowledge_items": {
     "patterns": [
       "JSON file storage per month (không dùng database hay Excel để deploy dễ hơn)",
       "Dark mode CSS với CSS custom properties (:root variables)",
-      "Vanilla JS fetch API thay vì axios/jQuery",
-      "Flask Blueprint chưa dùng (app nhỏ, 1 file app.py là đủ)"
+      "Vanilla JS fetch API thay vì axios/jQuery"
     ],
     "gotchas": [
-      "File gốc tiendumoithang.xlsb.xlsx vẫn còn trong folder - là file Excel cũ, không dùng nữa",
+      "File gốc tiendumoithang.xlsb.xlsx vẫn còn trong folder - là file Excel cũ, dùng để import lịch sử",
       "Port 5001 (không phải 5000) để tránh conflict với TinhLuong chạy port 5000",
-      "Encoding UTF-8 quan trọng khi đọc tên sheet tiếng Việt từ Excel cũ"
+      "Quầy thuốc (chỉ có 1 ngành nghề) sử dụng cấu trúc dữ liệu nha_hang để tương thích ngược với code gốc"
     ],
     "conventions": [
       "Ngày format: '1.7' không phải '01.07' hoặc '2025-07-01'",
       "Tiền đơn vị VND nguyên (không chia 1000 như TinhLuong)",
-      "Sheet type: 'nha_hang' hoặc 'thuoc' (snake_case)"
+      "Sheet type: 'nha_hang' trong JSON đóng vai trò là Quầy Thuốc"
     ]
   },
   "related_projects": [

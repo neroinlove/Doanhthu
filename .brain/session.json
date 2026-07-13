@@ -1,15 +1,13 @@
 {
-  "updated_at": "2026-07-13T14:41:00+07:00",
+  "updated_at": "2026-07-13T18:23:00+07:00",
   "working_on": {
-    "feature": "Web Dashboard Doanh Thu",
-    "task": "HOÀN THÀNH - Dashboard đang chạy tại localhost:5001",
+    "feature": "Quầy Thuốc Giao Diện & Dữ Liệu",
+    "task": "Hoàn thành import dữ liệu H1 2026 & Tính năng lưu nháp & Định dạng tiền tệ tự động",
     "status": "done",
     "files": [
-      "f:/Project/Doanhthu/app.py",
+      "f:/Project/Doanhthu/static/js/app.js",
       "f:/Project/Doanhthu/templates/dashboard.html",
-      "f:/Project/Doanhthu/templates/report.html",
-      "f:/Project/Doanhthu/static/css/style.css",
-      "f:/Project/Doanhthu/static/js/app.js"
+      "f:/Project/Doanhthu/static/css/style.css"
     ],
     "blockers": [],
     "notes": "User chưa quyết định deploy option (Cloudflare/Railway/VPS)"
@@ -21,11 +19,6 @@
       "notes": "Hỏi user chọn Cloudflare Tunnel, Railway, hay VPS"
     },
     {
-      "task": "Migrate data cũ từ Excel vào JSON",
-      "priority": "low",
-      "notes": "Script nhap_doanh_so.py có chức năng migrate sheet cũ, nhưng chưa cần vì data mới dùng web"
-    },
-    {
       "task": "Thêm authentication/password",
       "priority": "low",
       "notes": "Hiện tại không có auth - OK cho dùng nội bộ, cần thêm nếu deploy public"
@@ -33,15 +26,25 @@
   ],
   "recent_changes": [
     {
-      "timestamp": "2026-07-13T14:00:00+07:00",
+      "timestamp": "2026-07-13T18:23:00+07:00",
       "type": "feature",
-      "description": "Tạo CLI script nhap_doanh_so.py với menu tương tác",
-      "files": ["f:/Project/Doanhthu/nhap_doanh_so.py", "f:/Project/Doanhthu/chay_nhap_lieu.bat"]
+      "description": "Tự động định dạng thêm 3 số 0 (.000), cơ chế lưu nháp drafts và ẩn tab thừa, đổi nhãn giao diện thành Quầy Thuốc. Import dữ liệu H1 2026 từ Excel.",
+      "files": [
+        "f:/Project/Doanhthu/static/js/app.js",
+        "f:/Project/Doanhthu/templates/dashboard.html",
+        "f:/Project/Doanhthu/static/css/style.css",
+        "f:/Project/Doanhthu/data/records/2026-01.json",
+        "f:/Project/Doanhthu/data/records/2026-02.json",
+        "f:/Project/Doanhthu/data/records/2026-03.json",
+        "f:/Project/Doanhthu/data/records/2026-04.json",
+        "f:/Project/Doanhthu/data/records/2026-05.json",
+        "f:/Project/Doanhthu/data/records/2026-06.json"
+      ]
     },
     {
       "timestamp": "2026-07-13T14:30:00+07:00",
       "type": "feature",
-      "description": "Xây dựng toàn bộ web dashboard Flask (5 files) - thay thế CLI script",
+      "description": "Xây dựng toàn bộ web dashboard Flask - thay thế CLI script",
       "files": [
         "f:/Project/Doanhthu/app.py",
         "f:/Project/Doanhthu/templates/dashboard.html",
@@ -54,28 +57,24 @@
   ],
   "decisions_made": [
     {
+      "decision": "Sử dụng cấu trúc dữ liệu nha_hang làm Quầy Thuốc duy nhất, ẩn tab cũ",
+      "reason": "User chỉ bán thuốc, không có nhà hàng, cấu trúc này tương thích hoàn toàn với các trường tiền CK thuốc/dụng cụ của user"
+    },
+    {
+      "decision": "Mặc định tự động thêm đuôi .000 và định dạng dấu chấm trong input",
+      "reason": "Tăng tốc độ nhập liệu tối đa, do đơn vị thanh toán tại Việt Nam hầu như không dùng dưới 1.000đ"
+    },
+    {
+      "decision": "Giữ nháp (drafts) chưa lưu khi chuyển ngày/tab và hiển thị dấu chấm cam cảnh báo",
+      "reason": "Tránh mất dữ liệu nhập dở khi di chuyển nhanh qua lại"
+    },
+    {
       "decision": "Dùng JSON file storage thay vì Excel",
       "reason": "Nhẹ hơn, phù hợp web, dễ deploy, không cần openpyxl khi đọc/ghi thường xuyên"
     },
     {
-      "decision": "Bỏ cột Trưa trong sheet Nhà Hàng",
-      "reason": "User yêu cầu - chỉ giữ Sáng và Tối"
-    },
-    {
-      "decision": "Tách Tiền CK thành 3 cột riêng",
-      "reason": "User có 3 tài khoản ngân hàng: chính, thuốc, dụng cụ"
-    },
-    {
-      "decision": "Tổng = Sáng + Tối + 3 kênh CK (KHÔNG gồm Tiền Trả Hàng)",
-      "reason": "User xác nhận - tiền trả hàng là chi phí, không cộng vào doanh thu"
-    },
-    {
       "decision": "Port 5001 thay vì 5000",
       "reason": "Tránh conflict với project TinhLuong đang chạy port 5000"
-    },
-    {
-      "decision": "Dùng Vanilla JS không dùng React/Vue",
-      "reason": "App đơn giản, đủ dùng, deploy không cần build step"
     }
   ],
   "errors_encountered": [
