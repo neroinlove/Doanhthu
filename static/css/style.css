@@ -197,6 +197,18 @@ body {
 .day-pill.selected-th { background: var(--accent-th); border-color: var(--accent-th); color: #fff; }
 .day-pill.has-data-nh { border-color: rgba(59,130,246,.5); color: #93c5fd; }
 .day-pill.has-data-th { border-color: rgba(16,185,129,.5); color: #6ee7b7; }
+.day-pill { position: relative; }
+.day-pill.has-draft::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 6px;
+  height: 6px;
+  background-color: #f59e0b;
+  border-radius: 50%;
+  box-shadow: 0 0 4px #f59e0b;
+}
 
 /* Tong preview */
 .tong-preview {

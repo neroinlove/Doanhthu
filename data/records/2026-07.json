@@ -1,0 +1,16 @@
+{
+  "month": "2026-07",
+  "nha_hang": [
+    {
+      "ngay": "1.7",
+      "sang": 232000,
+      "toi": 534000,
+      "tien_ck": 234000,
+      "tien_ck_thuoc": 234000,
+      "tien_ck_dungcu": 34000,
+      "tien_tra_hang": 2323000,
+      "tong": 1268000
+    }
+  ],
+  "thuoc": []
+}

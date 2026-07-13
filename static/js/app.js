@@ -11,6 +11,7 @@ const state = {
   data:  { nha_hang: [], thuoc: [] },
   selectedDay: null,
   pendingDelete: null,      // { type, ngay }
+  drafts: { nha_hang: {}, thuoc: {} }
 };
 
 // ── DOM refs ─────────────────────────────────────────
@@ -49,6 +50,67 @@ function monthKey() {
 }
 function daysInMonth() {
   return new Date(state.year, state.month, 0).getDate();
+}
+function saveCurrentFormToDraft() {
+  if (!state.selectedDay) return;
+  const isNh = state.activeTab === 'nha_hang';
+  const tab = isNh ? 'nha_hang' : 'thuoc';
+  const dbRec = state.data[tab].find(r => r.ngay === state.selectedDay) || {};
+  
+  if (isNh) {
+    const current = {
+      sang:           getNum('inp_sang'),
+      toi:            getNum('inp_toi'),
+      tien_ck:        getNum('inp_tien_ck'),
+      tien_ck_thuoc:  getNum('inp_tien_ck_thuoc'),
+      tien_ck_dungcu: getNum('inp_tien_ck_dungcu'),
+      tien_tra_hang:  getNum('inp_tien_tra_hang'),
+    };
+    const hasDiff = current.sang !== (dbRec.sang || 0) ||
+                    current.toi !== (dbRec.toi || 0) ||
+                    current.tien_ck !== (dbRec.tien_ck || 0) ||
+                    current.tien_ck_thuoc !== (dbRec.tien_ck_thuoc || 0) ||
+                    current.tien_ck_dungcu !== (dbRec.tien_ck_dungcu || 0) ||
+                    current.tien_tra_hang !== (dbRec.tien_tra_hang || 0);
+    const isFormEmpty = !current.sang && !current.toi && !current.tien_ck && !current.tien_ck_thuoc && !current.tien_ck_dungcu && !current.tien_tra_hang;
+    if (hasDiff && !(isFormEmpty && !dbRec.ngay)) {
+      state.drafts.nha_hang[state.selectedDay] = current;
+    } else {
+      delete state.drafts.nha_hang[state.selectedDay];
+    }
+  } else {
+    const current = {
+      ca1:      getNum('inp_ca1'),
+      ca2:      getNum('inp_ca2'),
+      ca3:      getNum('inp_ca3'),
+      ca4:      getNum('inp_ca4'),
+      ck:       getNum('inp_ck'),
+      tra_them: getNum('inp_tra_them'),
+    };
+    const hasDiff = current.ca1 !== (dbRec.ca1 || 0) ||
+                    current.ca2 !== (dbRec.ca2 || 0) ||
+                    current.ca3 !== (dbRec.ca3 || 0) ||
+                    current.ca4 !== (dbRec.ca4 || 0) ||
+                    current.ck !== (dbRec.ck || 0) ||
+                    current.tra_them !== (dbRec.tra_them || 0);
+    const isFormEmpty = !current.ca1 && !current.ca2 && !current.ca3 && !current.ca4 && !current.ck && !current.tra_them;
+    if (hasDiff && !(isFormEmpty && !dbRec.ngay)) {
+      state.drafts.thuoc[state.selectedDay] = current;
+    } else {
+      delete state.drafts.thuoc[state.selectedDay];
+    }
+  }
+}
+function updateDraftIndicator() {
+  saveCurrentFormToDraft();
+  if (state.selectedDay) {
+    const pill = document.querySelector(`.day-pill[data-ngay="${state.selectedDay}"]`);
+    if (pill) {
+      const tab = state.activeTab;
+      const hasDraft = !!state.drafts[tab][state.selectedDay];
+      pill.classList.toggle('has-draft', hasDraft);
+    }
+  }
 }
 
 // ── Toast ────────────────────────────────────────────
@@ -115,12 +177,16 @@ function updateMonthDisplay() {
   monthDisplay.textContent = `Tháng ${state.month} / ${state.year}`;
 }
 $('btnPrevMonth').addEventListener('click', () => {
+  saveCurrentFormToDraft();
+  state.drafts = { nha_hang: {}, thuoc: {} };
   if (--state.month < 1) { state.month = 12; state.year--; }
   state.selectedDay = null;
   updateMonthDisplay();
   loadMonth();
 });
 $('btnNextMonth').addEventListener('click', () => {
+  saveCurrentFormToDraft();
+  state.drafts = { nha_hang: {}, thuoc: {} };
   if (++state.month > 12) { state.month = 1; state.year++; }
   state.selectedDay = null;
   updateMonthDisplay();
@@ -129,6 +195,7 @@ $('btnNextMonth').addEventListener('click', () => {
 
 // ── Tab switching ────────────────────────────────────
 function switchTab(tab) {
+  saveCurrentFormToDraft();
   state.activeTab = tab;
   state.selectedDay = null;
 
@@ -142,8 +209,8 @@ function switchTab(tab) {
   tableNhaHang.classList.toggle('hidden', !isNh);
   tableThuoc.classList.toggle('hidden',    isNh);
 
-  formTitle.textContent  = isNh ? '📝 Nhập liệu — Nhà Hàng' : '📝 Nhập liệu — Thuốc';
-  tableTitle.textContent = isNh ? '📋 Tổng hợp tháng — Nhà Hàng' : '📋 Tổng hợp tháng — Thuốc';
+  formTitle.textContent  = '📝 Nhập liệu — Quầy Thuốc';
+  tableTitle.textContent = '📋 Tổng hợp tháng — Quầy Thuốc';
 
   clearInputs();
   renderDaySelector();
@@ -160,6 +227,7 @@ function renderDaySelector() {
   const selClass   = isNh ? 'selected-nh' : 'selected-th';
 
   daySelector.innerHTML = '';
+  const tab = state.activeTab;
   for (let d = 1; d <= total; d++) {
     const ngay = `${d}.${state.month}`;
     const pill = document.createElement('button');
@@ -168,12 +236,14 @@ function renderDaySelector() {
     pill.dataset.ngay = ngay;
     if (existing.has(ngay)) pill.classList.add(colorClass);
     if (ngay === state.selectedDay) pill.classList.add(selClass);
+    if (state.drafts[tab][ngay]) pill.classList.add('has-draft');
     pill.addEventListener('click', () => selectDay(ngay, pill));
     daySelector.appendChild(pill);
   }
 }
 
 function selectDay(ngay, pill) {
+  saveCurrentFormToDraft();
   state.selectedDay = ngay;
   // Update pill UI
   document.querySelectorAll('.day-pill').forEach(p => {
@@ -182,13 +252,38 @@ function selectDay(ngay, pill) {
   const selClass = state.activeTab === 'nha_hang' ? 'selected-nh' : 'selected-th';
   pill.classList.add(selClass);
   loadDayIntoForm(ngay);
+  renderDaySelector();
 }
 
 function loadDayIntoForm(ngay) {
   const isNh = state.activeTab === 'nha_hang';
+  const tab = isNh ? 'nha_hang' : 'thuoc';
+  const draft = state.drafts[tab][ngay];
+  clearInputs();
+  
+  if (draft) {
+    if (isNh) {
+      $('inp_sang').value          = formatInputNumber(draft.sang);
+      $('inp_toi').value           = formatInputNumber(draft.toi);
+      $('inp_tien_ck').value       = formatInputNumber(draft.tien_ck);
+      $('inp_tien_ck_thuoc').value = formatInputNumber(draft.tien_ck_thuoc);
+      $('inp_tien_ck_dungcu').value= formatInputNumber(draft.tien_ck_dungcu);
+      $('inp_tien_tra_hang').value = formatInputNumber(draft.tien_tra_hang);
+      updatePreviewNh();
+    } else {
+      $('inp_ca1').value      = formatInputNumber(draft.ca1);
+      $('inp_ca2').value      = formatInputNumber(draft.ca2);
+      $('inp_ca3').value      = formatInputNumber(draft.ca3);
+      $('inp_ca4').value      = formatInputNumber(draft.ca4);
+      $('inp_ck').value       = formatInputNumber(draft.ck);
+      $('inp_tra_them').value = formatInputNumber(draft.tra_them);
+      updatePreviewTh();
+    }
+    return;
+  }
+  
   const recs  = isNh ? state.data.nha_hang : state.data.thuoc;
   const rec   = recs.find(r => r.ngay === ngay);
-  clearInputs();
   if (!rec) return;
 
   if (isNh) {
@@ -254,6 +349,7 @@ async function saveNh() {
   try {
     await apiPost(`/api/records/${monthKey()}/nha_hang`, body);
     toast('Đã lưu ngày ' + state.selectedDay);
+    delete state.drafts.nha_hang[state.selectedDay];
     await loadMonth();
   } catch(e) { toast(e.message, 'error'); }
 }
@@ -272,6 +368,7 @@ async function saveTh() {
   try {
     await apiPost(`/api/records/${monthKey()}/thuoc`, body);
     toast('Đã lưu ngày ' + state.selectedDay);
+    delete state.drafts.thuoc[state.selectedDay];
     await loadMonth();
   } catch(e) { toast(e.message, 'error'); }
 }
@@ -282,7 +379,7 @@ $('btnSaveTh').addEventListener('click', saveTh);
 // ── Delete ────────────────────────────────────────────
 function confirmDelete(type, ngay) {
   state.pendingDelete = { type, ngay };
-  modalDeleteMsg.textContent = `Xóa dữ liệu ngày ${ngay} (${type === 'nha_hang' ? 'Nhà Hàng' : 'Thuốc'})?`;
+  modalDeleteMsg.textContent = `Xóa dữ liệu ngày ${ngay} (Quầy Thuốc)?`;
   modalDelete.classList.remove('hidden');
 }
 
@@ -296,6 +393,7 @@ $('btnConfirmDelete').addEventListener('click', async () => {
     await apiDelete(`/api/records/${monthKey()}/${type}/${encodeURIComponent(ngay)}`);
     toast('Đã xóa ngày ' + ngay);
     state.pendingDelete = null;
+    delete state.drafts[type][ngay];
     if (state.selectedDay === ngay) { state.selectedDay = null; clearInputs(); }
     await loadMonth();
   } catch(e) { toast(e.message, 'error'); }
@@ -314,7 +412,7 @@ function renderTableNh() {
   const foot = $('footNh');
 
   if (!recs.length) {
-    body.innerHTML = `<tr><td colspan="9"><div class="empty-state"><span class="icon">🏠</span><p>Chưa có dữ liệu tháng này</p></div></td></tr>`;
+    body.innerHTML = `<tr><td colspan="9"><div class="empty-state"><span class="icon">💊</span><p>Chưa có dữ liệu tháng này</p></div></td></tr>`;
     foot.innerHTML = '';
     return;
   }
@@ -477,6 +575,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (el) {
       el.addEventListener('input', formatInputOnType);
       el.addEventListener('input', updatePreviewNh);
+      el.addEventListener('input', updateDraftIndicator);
     }
   });
   
@@ -485,6 +584,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (el) {
       el.addEventListener('input', formatInputOnType);
       el.addEventListener('input', updatePreviewTh);
+      el.addEventListener('input', updateDraftIndicator);
     }
   });
 });

@@ -29,25 +29,25 @@
 </header>
 
 <!-- ── TAB NAV ── -->
-<nav class="tab-nav" id="tabNav">
+<nav class="tab-nav hidden" id="tabNav">
   <button class="tab-btn active-nh" id="tabNhaHang">🏠 Nhà Hàng</button>
   <button class="tab-btn" id="tabThuoc">💊 Thuốc</button>
 </nav>
 
 <!-- ── KPI STRIP ── -->
-<div class="kpi-strip" id="kpiStrip">
-  <div class="kpi-card kpi-nh">
-    <div class="kpi-label">Tổng tháng (Nhà hàng)</div>
+<<div class="kpi-strip" id="kpiStrip">
+  <div class="kpi-card kpi-nh" style="grid-column: span 2;">
+    <div class="kpi-label">Tổng doanh thu thuốc tháng</div>
     <div class="kpi-value" id="kpiNhTong">—</div>
     <div class="kpi-sub" id="kpiNhSub">0 ngày có dữ liệu</div>
   </div>
-  <div class="kpi-card kpi-th">
+  <div class="kpi-card kpi-th hidden">
     <div class="kpi-label">Tổng tháng (Thuốc)</div>
     <div class="kpi-value" id="kpiThTong">—</div>
     <div class="kpi-sub" id="kpiThSub">0 ngày có dữ liệu</div>
   </div>
-  <div class="kpi-card kpi-all">
-    <div class="kpi-label">Tổng chung</div>
+  <div class="kpi-card kpi-all" style="grid-column: span 1;">
+    <div class="kpi-label">Doanh thu trung bình ngày</div>
     <div class="kpi-value" id="kpiAllTong">—</div>
     <div class="kpi-sub" id="kpiAllSub">TB ngày: —</div>
   </div>
@@ -59,7 +59,7 @@
   <!-- LEFT: Form nhập liệu -->
   <section class="card" id="formCard">
     <div class="card-header">
-      <span class="card-title" id="formTitle">📝 Nhập liệu — Nhà Hàng</span>
+      <span class="card-title" id="formTitle">📝 Nhập liệu — Quầy Thuốc</span>
     </div>
     <div class="card-body">
 
@@ -154,7 +154,7 @@
   <!-- RIGHT: Bảng tổng hợp -->
   <section class="card" id="tableCard">
     <div class="card-header">
-      <span class="card-title" id="tableTitle">📋 Tổng hợp tháng — Nhà Hàng</span>
+      <span class="card-title" id="tableTitle">📋 Tổng hợp tháng — Quầy Thuốc</span>
     </div>
     <div class="card-body" style="padding: 0">
 
