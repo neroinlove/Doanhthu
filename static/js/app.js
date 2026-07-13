@@ -33,6 +33,10 @@ function fmt(n) {
   if (!n && n !== 0) return '—';
   return Number(n).toLocaleString('vi-VN') + ' đ';
 }
+function formatInputNumber(n) {
+  if (!n && n !== 0) return '';
+  return Number(n).toLocaleString('vi-VN');
+}
 function fmtShort(n) {
   if (!n && n !== 0) return '—';
   const v = Number(n);
@@ -188,20 +192,20 @@ function loadDayIntoForm(ngay) {
   if (!rec) return;
 
   if (isNh) {
-    $('inp_sang').value          = rec.sang          || '';
-    $('inp_toi').value           = rec.toi           || '';
-    $('inp_tien_ck').value       = rec.tien_ck       || '';
-    $('inp_tien_ck_thuoc').value = rec.tien_ck_thuoc || '';
-    $('inp_tien_ck_dungcu').value= rec.tien_ck_dungcu|| '';
-    $('inp_tien_tra_hang').value = rec.tien_tra_hang || '';
+    $('inp_sang').value          = formatInputNumber(rec.sang);
+    $('inp_toi').value           = formatInputNumber(rec.toi);
+    $('inp_tien_ck').value       = formatInputNumber(rec.tien_ck);
+    $('inp_tien_ck_thuoc').value = formatInputNumber(rec.tien_ck_thuoc);
+    $('inp_tien_ck_dungcu').value= formatInputNumber(rec.tien_ck_dungcu);
+    $('inp_tien_tra_hang').value = formatInputNumber(rec.tien_tra_hang);
     updatePreviewNh();
   } else {
-    $('inp_ca1').value      = rec.ca1      || '';
-    $('inp_ca2').value      = rec.ca2      || '';
-    $('inp_ca3').value      = rec.ca3      || '';
-    $('inp_ca4').value      = rec.ca4      || '';
-    $('inp_ck').value       = rec.ck       || '';
-    $('inp_tra_them').value = rec.tra_them || '';
+    $('inp_ca1').value      = formatInputNumber(rec.ca1);
+    $('inp_ca2').value      = formatInputNumber(rec.ca2);
+    $('inp_ca3').value      = formatInputNumber(rec.ca3);
+    $('inp_ca4').value      = formatInputNumber(rec.ca4);
+    $('inp_ck').value       = formatInputNumber(rec.ck);
+    $('inp_tra_them').value = formatInputNumber(rec.tra_them);
     updatePreviewTh();
   }
 }
@@ -216,7 +220,11 @@ function clearInputs() {
 }
 
 // ── Live preview ─────────────────────────────────────
-function getNum(id) { return parseInt($(id)?.value || '0') || 0; }
+function getNum(id) {
+  const val = $(id)?.value || '';
+  const cleanVal = val.replace(/\./g, '').replace(/,/g, '').trim();
+  return parseInt(cleanVal, 10) || 0;
+}
 
 function updatePreviewNh() {
   const t = getNum('inp_sang') + getNum('inp_toi') + getNum('inp_tien_ck')
@@ -229,14 +237,7 @@ function updatePreviewTh() {
   $('previewTongTh').textContent = fmt(t);
 }
 
-['inp_sang','inp_toi','inp_tien_ck','inp_tien_ck_thuoc','inp_tien_ck_dungcu']
-  .forEach(id => document.addEventListener('DOMContentLoaded', () => {
-    $(id)?.addEventListener('input', updatePreviewNh);
-  }));
-['inp_ca1','inp_ca2','inp_ca3','inp_ca4','inp_ck']
-  .forEach(id => document.addEventListener('DOMContentLoaded', () => {
-    $(id)?.addEventListener('input', updatePreviewTh);
-  }));
+// ── Live preview wiring (handled at the bottom of the file) ────
 
 // ── Save handlers ─────────────────────────────────────
 async function saveNh() {
@@ -433,12 +434,50 @@ $('btnExport').addEventListener('click', () => {
   window.location.href = `/api/export/${monthKey()}`;
 });
 
+function formatInputOnType(e) {
+  const input = e.target;
+  let selectionStart = input.selectionStart;
+  
+  const valBefore = input.value;
+  const dotCountBefore = (valBefore.substring(0, selectionStart).match(/\./g) || []).length;
+  
+  let numericString = valBefore.replace(/\D/g, '');
+  
+  if (numericString === '') {
+    input.value = '';
+    return;
+  }
+  
+  let formatted = Number(numericString).toLocaleString('vi-VN');
+  input.value = formatted;
+  
+  const dotCountAfter = (formatted.substring(0, selectionStart).match(/\./g) || []).length;
+  let newCursorPosition = selectionStart + (dotCountAfter - dotCountBefore);
+  newCursorPosition = Math.max(0, Math.min(newCursorPosition, formatted.length));
+  
+  input.setSelectionRange(newCursorPosition, newCursorPosition);
+}
+
 // ── Live preview wiring (after DOM ready) ────────────
 document.addEventListener('DOMContentLoaded', () => {
-  ['inp_sang','inp_toi','inp_tien_ck','inp_tien_ck_thuoc','inp_tien_ck_dungcu']
-    .forEach(id => $(id)?.addEventListener('input', updatePreviewNh));
-  ['inp_ca1','inp_ca2','inp_ca3','inp_ca4','inp_ck']
-    .forEach(id => $(id)?.addEventListener('input', updatePreviewTh));
+  const nhInputs = ['inp_sang','inp_toi','inp_tien_ck','inp_tien_ck_thuoc','inp_tien_ck_dungcu','inp_tien_tra_hang'];
+  const thInputs = ['inp_ca1','inp_ca2','inp_ca3','inp_ca4','inp_ck','inp_tra_them'];
+  
+  nhInputs.forEach(id => {
+    const el = $(id);
+    if (el) {
+      el.addEventListener('input', formatInputOnType);
+      el.addEventListener('input', updatePreviewNh);
+    }
+  });
+  
+  thInputs.forEach(id => {
+    const el = $(id);
+    if (el) {
+      el.addEventListener('input', formatInputOnType);
+      el.addEventListener('input', updatePreviewTh);
+    }
+  });
 });
 
 // ── Init ─────────────────────────────────────────────
