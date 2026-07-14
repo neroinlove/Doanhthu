@@ -23,6 +23,10 @@
     <button class="month-btn" id="btnNextMonth" title="Tháng sau">▶</button>
   </div>
   <div class="header-right">
+    <div class="view-switch" role="group" aria-label="Chuyen giao dien">
+      <button class="view-switch-btn active" id="btnViewDesktop" type="button">⌨️ Desktop</button>
+      <button class="view-switch-btn" id="btnViewMobile" type="button">📱 Mobile</button>
+    </div>
     <a href="/report" class="btn btn-outline btn-sm">📈 Báo cáo</a>
     <button class="btn btn-gold btn-sm" id="btnExport">⬇ Export Excel</button>
   </div>
@@ -159,7 +163,7 @@
     <div class="card-body" style="padding: 0">
 
       <!-- Bảng Quầy Thuốc -->
-      <div id="tableQuayThuoc">
+      <div id="tableQuayThuoc" class="desktop-table-wrap">
         <div class="table-wrapper">
           <table id="tblNh">
             <thead>
@@ -184,7 +188,7 @@
       </div>
 
       <!-- Bảng Thuốc -->
-      <div id="tableThuoc" class="hidden">
+      <div id="tableThuoc" class="hidden desktop-table-wrap">
         <div class="table-wrapper">
           <table id="tblTh">
             <thead>
@@ -206,6 +210,14 @@
             <tfoot id="footTh"></tfoot>
           </table>
         </div>
+      </div>
+
+      <div id="mobileRecords" class="mobile-records hidden">
+        <div class="mobile-records-head">
+          <span class="mobile-records-title" id="mobileRecordsTitle">Mobile view</span>
+          <span class="mobile-records-sub" id="mobileRecordsSub">Danh sach ngay theo the</span>
+        </div>
+        <div class="mobile-records-list" id="mobileRecordsList"></div>
       </div>
 
     </div>

@@ -1,0 +1,5 @@
+interface:
+  display_name: "Doanhthu Dev Operator"
+  short_description: "Phát triển và chẩn đoán lỗi cho Dashboard Doanh Thu Quầy Thuốc."
+  icon: "bug"
+  color: "#1F2937"

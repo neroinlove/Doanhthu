@@ -13,10 +13,15 @@ from calendar import monthrange
 from flask import Flask, render_template, request, jsonify
 
 app = Flask(__name__)
+app.config["JSON_AS_ASCII"] = False
 
 BASE_DIR  = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR  = os.path.join(BASE_DIR, 'data', 'records')
 os.makedirs(DATA_DIR, exist_ok=True)
+
+APP_HOST = os.getenv("APP_HOST", "0.0.0.0")
+APP_PORT = int(os.getenv("APP_PORT", "5001"))
+APP_DEBUG = os.getenv("APP_DEBUG", "0").lower() in {"1", "true", "yes", "on"}
 
 # ─── Helpers ────────────────────────────────────────────────────
 
@@ -110,6 +115,16 @@ def dashboard():
 @app.route('/report')
 def report():
     return render_template('report.html')
+
+
+@app.route('/health')
+def health():
+    return jsonify({
+        "status": "ok",
+        "service": "doanhthu",
+        "time": datetime.now().isoformat(timespec="seconds"),
+        "data_dir": DATA_DIR,
+    })
 
 
 # ─── API: Records ────────────────────────────────────────────────
@@ -328,4 +343,4 @@ def report_data():
 # ─── Entry point ─────────────────────────────────────────────────
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5001, host='0.0.0.0')
+    app.run(debug=APP_DEBUG, port=APP_PORT, host=APP_HOST)

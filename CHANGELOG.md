@@ -2,6 +2,22 @@
 
 ## [2026-07-14]
 
+### Added
+- Nút chuyển giao diện `Desktop / Mobile` cho dashboard.
+- Chế độ mobile render theo thẻ để xem dễ hơn trên điện thoại.
+- `GET /health` để proxy và service manager kiểm tra trạng thái app.
+- Cấu hình chạy production bằng biến môi trường `APP_HOST`, `APP_PORT`, `APP_DEBUG`.
+
+### Changed
+- Cập nhật hướng deploy cho Mac mini M4 sau Nginx Proxy Manager và Cloudflare DNS.
+- Làm rõ luồng public: `Cloudflare DNS -> Nginx Proxy Manager -> Mac mini`.
+
+### Fixed
+- Sửa title/tab logic để hiển thị đúng theo tab đang chọn.
+- Sửa thông điệp xoá cho biết đúng loại dữ liệu đang thao tác.
+
+### Previous same-day updates
+
 ### Changed
 - Chuẩn hóa toàn bộ tên nghiệp vụ từ cấu trúc cũ sang `quay_thuoc` trong API, JSON, giao diện, báo cáo, Excel và tài liệu.
 - Cá nhân hóa `.agents` cho dự án Dashboard Doanh Thu Quầy Thuốc.

@@ -9,6 +9,8 @@ cd f:\Project\Doanhthu
 pip install -r requirements.txt
 python app.py
 # → Mở http://localhost:5001
+# hoặc:
+# APP_HOST=0.0.0.0 APP_PORT=5001 APP_DEBUG=0 python app.py
 ```
 
 ## Cấu trúc
@@ -61,9 +63,21 @@ Không chỉnh cùng một file dữ liệu tháng trên hai máy trước khi p
 
 ## Deploy
 
-Xem `docs/api/endpoints.md` và [CHANGELOG.md](CHANGELOG.md) để biết chi tiết.
+Mô hình khuyến nghị cho Mac mini M4:
 
-**Tùy chọn deploy:**
-- Cloudflare Tunnel (miễn phí, dùng ngay)
-- Railway/Render (push GitHub → live)
-- VPS + domain riêng (bền nhất)
+`Cloudflare DNS -> Nginx Proxy Manager -> Mac mini (Flask/Gunicorn) -> data/records/*.json`
+
+Gợi ý cấu hình:
+
+- Subdomain: `doanhthu.neroinlove.com`
+- Proxy ở Nginx Proxy Manager trỏ vào Mac mini trong LAN
+- SSL: Let’s Encrypt ở NPM
+- App chạy với `APP_DEBUG=0`
+- Nên để service tự khởi động cùng máy
+
+Kiểm tra sức khỏe:
+
+- `GET /health`
+- Dùng để kiểm tra app còn sống trước khi NPM forward traffic
+
+Xem `docs/api/endpoints.md` và [CHANGELOG.md](CHANGELOG.md) để biết chi tiết.
