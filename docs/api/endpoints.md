@@ -15,7 +15,7 @@ Lấy toàn bộ dữ liệu tháng.
 ```json
 {
   "month": "2025-07",
-  "nha_hang": [
+  "quay_thuoc": [
     { "ngay": "1.7", "sang": 5000000, "toi": 8000000,
       "tien_ck": 1500000, "tien_ck_thuoc": 200000, "tien_ck_dungcu": 0,
       "tien_tra_hang": 0, "tong": 14700000 }
@@ -27,8 +27,8 @@ Lấy toàn bộ dữ liệu tháng.
 }
 ```
 
-### POST `/api/records/<YYYY-MM>/nha_hang`
-Thêm hoặc cập nhật 1 ngày nhà hàng.
+### POST `/api/records/<YYYY-MM>/quay_thuoc`
+Thêm hoặc cập nhật 1 ngày quầy thuốc.
 
 **Request body:**
 ```json
@@ -63,7 +63,7 @@ Thêm hoặc cập nhật 1 ngày thuốc.
 ### DELETE `/api/records/<month>/<type>/<ngay>`
 Xóa 1 dòng dữ liệu.
 
-- `type`: `nha_hang` hoặc `thuoc`
+- `type`: `quay_thuoc` hoặc `thuoc`
 - `ngay`: vd `1.7`
 
 ---
@@ -77,7 +77,7 @@ KPI tóm tắt tháng.
 ```json
 {
   "month": "2025-07",
-  "nha_hang": {
+  "quay_thuoc": {
     "tong_thang": 450000000,
     "tb_ngay": 15000000,
     "max_ngay": 25000000,
@@ -106,4 +106,4 @@ Dữ liệu 6 tháng gần nhất (dùng cho trang báo cáo Chart.js).
 
 ### GET `/api/export/<YYYY-MM>`
 Download file Excel tháng đó (`doanhthu_YYYY-MM.xlsx`).  
-Gồm 2 sheets: **Nhà Hàng** và **Thuốc**.
+Gồm 2 sheets: **Quầy Thuốc** và **Thuốc**.

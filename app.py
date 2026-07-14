@@ -1,12 +1,13 @@
 """
 Dashboard Doanh Thu - Flask App
 ================================
-Web app nhập và theo dõi doanh thu nhà hàng + thuốc theo ngày/tháng.
+Web app nhập và theo dõi doanh thu quầy thuốc + thuốc theo ngày/tháng.
 """
 
 import json
 import os
 import re
+import tempfile
 from datetime import datetime
 from calendar import monthrange
 from flask import Flask, render_template, request, jsonify
@@ -31,13 +32,23 @@ def load_month(month: str) -> dict:
     # Default empty structure
     return {
         "month": month,
-        "nha_hang": [],   # list of daily records
+        "quay_thuoc": [],   # list of daily records
         "thuoc":    []
     }
 
 def save_month(month: str, data: dict):
-    with open(record_path(month), 'w', encoding='utf-8') as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+    """Ghi JSON nguyên tử để tránh file dở dang nếu ứng dụng bị ngắt giữa lúc lưu."""
+    target = record_path(month)
+    fd, temp_path = tempfile.mkstemp(prefix=f".{month}-", suffix=".tmp", dir=DATA_DIR)
+    try:
+        with os.fdopen(fd, 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(temp_path, target)
+    finally:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
 
 def safe_int(val, default=0) -> int:
     try:
@@ -112,9 +123,9 @@ def get_records(month):
     return jsonify(data)
 
 
-@app.route('/api/records/<month>/nha_hang', methods=['POST'])
+@app.route('/api/records/<month>/quay_thuoc', methods=['POST'])
 def upsert_nh(month):
-    """Thêm hoặc cập nhật 1 ngày nhà hàng."""
+    """Thêm hoặc cập nhật 1 ngày quầy thuốc."""
     if not re.match(r'^\d{4}-\d{2}$', month):
         return jsonify({'error': 'month phải có dạng YYYY-MM'}), 400
 
@@ -135,17 +146,17 @@ def upsert_nh(month):
     rec["tong"] = compute_tong_nh(rec)
 
     data = load_month(month)
-    existing = next((i for i, r in enumerate(data['nha_hang']) if r['ngay'] == ngay), None)
+    existing = next((i for i, r in enumerate(data['quay_thuoc']) if r['ngay'] == ngay), None)
     if existing is not None:
-        data['nha_hang'][existing] = rec
+        data['quay_thuoc'][existing] = rec
     else:
-        data['nha_hang'].append(rec)
+        data['quay_thuoc'].append(rec)
 
     # Sort theo ngày
     def day_key(r):
         try: return float(r['ngay'].split('.')[0])
         except: return 0
-    data['nha_hang'].sort(key=day_key)
+    data['quay_thuoc'].sort(key=day_key)
 
     save_month(month, data)
     return jsonify({'message': 'OK', 'record': rec})
@@ -192,8 +203,8 @@ def upsert_thuoc(month):
 @app.route('/api/records/<month>/<sheet_type>/<ngay>', methods=['DELETE'])
 def delete_record(month, sheet_type, ngay):
     """Xóa 1 dòng ngày."""
-    if sheet_type not in ('nha_hang', 'thuoc'):
-        return jsonify({'error': 'sheet_type phải là nha_hang hoặc thuoc'}), 400
+    if sheet_type not in ('quay_thuoc', 'thuoc'):
+        return jsonify({'error': 'sheet_type phải là quay_thuoc hoặc thuoc'}), 400
     data = load_month(month)
     before = len(data[sheet_type])
     data[sheet_type] = [r for r in data[sheet_type] if r['ngay'] != ngay]
@@ -211,7 +222,7 @@ def get_summary(month):
     data = load_month(month)
     return jsonify({
         "month":    month,
-        "nha_hang": summary_nh(data['nha_hang']),
+        "quay_thuoc": summary_nh(data['quay_thuoc']),
         "thuoc":    summary_thuoc(data['thuoc'])
     })
 
@@ -250,13 +261,13 @@ def export_excel(month):
             cell.alignment = Alignment(horizontal="center")
             cell.border = border
 
-        # Sheet Nhà Hàng
-        ws1 = wb.create_sheet("Nhà Hàng")
+        # Sheet Quầy Thuốc
+        ws1 = wb.create_sheet("Quầy Thuốc")
         nh_headers = ["Ngày", "Sáng", "Tối", "Tiền CK", "Tiền CK thuốc",
                       "Tiền CK dụng cụ", "Tiền trả hàng", "Tổng"]
         for ci, h in enumerate(nh_headers, 1):
             hdr(ws1.cell(1, ci, h))
-        for ri, rec in enumerate(data['nha_hang'], 2):
+        for ri, rec in enumerate(data['quay_thuoc'], 2):
             vals = [rec.get('ngay'), rec.get('sang'), rec.get('toi'),
                     rec.get('tien_ck'), rec.get('tien_ck_thuoc'),
                     rec.get('tien_ck_dungcu'), rec.get('tien_tra_hang'), rec.get('tong')]
@@ -301,14 +312,14 @@ def report_data():
     result = []
     for m in months[:6]:   # Trả về 6 tháng gần nhất
         data = load_month(m)
-        sm_nh    = summary_nh(data['nha_hang'])
+        sm_nh    = summary_nh(data['quay_thuoc'])
         sm_thuoc = summary_thuoc(data['thuoc'])
         result.append({
             "month":        m,
-            "nha_hang":     sm_nh,
+            "quay_thuoc":     sm_nh,
             "thuoc":        sm_thuoc,
             "tong_chung":   sm_nh['tong_thang'] + sm_thuoc['tong_thang'],
-            "nh_days":      data['nha_hang'],
+            "nh_days":      data['quay_thuoc'],
             "thuoc_days":   data['thuoc'],
         })
     return jsonify(result)

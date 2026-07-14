@@ -1,6 +1,6 @@
 # Dashboard Doanh Thu
 
-Web dashboard nhập và theo dõi doanh thu nhà hàng + thuốc theo ngày/tháng.
+Web dashboard nhập và theo dõi doanh thu quầy thuốc theo ngày/tháng.
 
 ## Cài đặt
 
@@ -36,9 +36,28 @@ Doanhthu/
 | Method | URL | Chức năng |
 |--------|-----|-----------|
 | GET | `/api/records/YYYY-MM` | Lấy data tháng |
-| POST | `/api/records/YYYY-MM/nha_hang` | Lưu ngày NH |
-| POST | `/api/records/YYYY-MM/thuoc` | Lưu ngày Thuốc |
+| POST | `/api/records/YYYY-MM/quay_thuoc` | Lưu doanh thu một ngày |
 | GET | `/api/export/YYYY-MM` | Download Excel |
+
+## Làm việc trên hai máy với Git
+
+Repository: `https://github.com/neroinlove/Doanhthu.git`
+
+Trước khi bắt đầu làm việc trên mỗi máy:
+
+```bash
+git pull --rebase origin main
+```
+
+Sau khi hoàn thành và kiểm tra thay đổi:
+
+```bash
+git add .
+git commit -m "Mô tả thay đổi"
+git push origin main
+```
+
+Không chỉnh cùng một file dữ liệu tháng trên hai máy trước khi pull, vì mỗi tháng hiện được lưu trong một file JSON duy nhất.
 
 ## Deploy
 

@@ -18,7 +18,7 @@ from calendar import monthrange
 FILE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tiendumoithang.xlsb.xlsx")
 BACKUP_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "backup")
 
-# Cấu trúc cột sheet NHÀ HÀNG (mới)
+# Cấu trúc cột sheet QUẦY THUỐC (mới)
 COLS_NH = ["Thời Gian", "Sáng", "Tối", "Tiền CK", "Tiền CK thuốc", "Tiền CK dụng cụ", "Tiền trả hàng", "Tổng"]
 
 # Cấu trúc cột sheet THUỐC (mới - giữ nguyên)
@@ -97,7 +97,7 @@ def style_data_cell(cell):
     cell.alignment = Alignment(horizontal="center", vertical="center")
 
 def create_sheet_nh(wb, ten_sheet):
-    """Tạo sheet mới kiểu Nhà Hàng với header chuẩn."""
+    """Tạo sheet mới kiểu Quầy Thuốc với header chuẩn."""
     ws = wb.create_sheet(title=ten_sheet)
     ws.row_dimensions[1].height = 30
 
@@ -171,8 +171,8 @@ def find_row_for_day(ws, ngay, thang, nam):
 
 # =================== NHẬP NH ====================
 
-def nhap_nha_hang():
-    header("NHÀ HÀNG")
+def nhap_quay_thuoc():
+    header("QUẦY THUỐC")
     wb = load_workbook()
 
     thang, nam = chon_thang()
@@ -297,7 +297,7 @@ def tao_sheet_moi():
 
     created = []
     for loai, ten_fn, create_fn in [
-        ("Nhà hàng", ten_sheet_nh,   lambda w, n: create_sheet_nh(w, n)),
+        ("Quầy thuốc", ten_sheet_nh,   lambda w, n: create_sheet_nh(w, n)),
         ("Thuốc",   ten_sheet_thuoc, lambda w, n: create_sheet_thuoc(w, n)),
     ]:
         ten = ten_fn(thang, nam)
@@ -324,7 +324,7 @@ def xem_tom_tat():
     thang, nam = chon_thang()
 
     for loai, ten_fn, col_tong in [
-        ("🏠 Nhà hàng", ten_sheet_nh,   8),
+        ("🏠 Quầy thuốc", ten_sheet_nh,   8),
         ("💊 Thuốc",    ten_sheet_thuoc, 8),
     ]:
         ten = ten_fn(thang, nam)
@@ -359,7 +359,7 @@ def migrate_sheet_cu():
     header("CHUYỂN ĐỔI SHEET CŨ → CẤU TRÚC MỚI")
     wb = load_workbook()
 
-    print("\n  Sheet nhà hàng cũ có cột: Thời Gian, Sáng, Trưa, Tối, Tổng,")
+    print("\n  Sheet quầy thuốc cũ có cột: Thời Gian, Sáng, Trưa, Tối, Tổng,")
     print("  Tiền ck, Tiền mặt, Tiền thực tế, Tiền trên app, Dư thiếu")
     print("\n  Script sẽ:")
     print("  1. Giữ lại: Ngày, Sáng, Tối")
@@ -376,11 +376,11 @@ def migrate_sheet_cu():
             sheets_nh.append(name)
 
     if not sheets_nh:
-        print("\n  Không tìm thấy sheet nhà hàng nào.")
+        print("\n  Không tìm thấy sheet quầy thuốc nào.")
         input("  [Enter để tiếp tục]")
         return
 
-    print(f"\n  Tìm thấy {len(sheets_nh)} sheet nhà hàng:")
+    print(f"\n  Tìm thấy {len(sheets_nh)} sheet quầy thuốc:")
     for i, s in enumerate(sheets_nh, 1):
         print(f"    {i}. {s}")
 
@@ -458,7 +458,7 @@ def main():
     while True:
         header("MENU CHÍNH")
         print("""
-  1. 🏠  Nhập doanh thu Nhà Hàng
+  1. 🏠  Nhập doanh thu Quầy Thuốc
   2. 💊  Nhập doanh thu Thuốc
   3. 📅  Tạo sheet tháng mới
   4. 📊  Xem tóm tắt tháng
@@ -468,7 +468,7 @@ def main():
         chon = input("  Chọn [0-5]: ").strip()
 
         if chon == "1":
-            nhap_nha_hang()
+            nhap_quay_thuoc()
         elif chon == "2":
             nhap_thuoc()
         elif chon == "3":

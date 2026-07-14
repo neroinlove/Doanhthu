@@ -5,25 +5,25 @@
 
 // ── State ───────────────────────────────────────────
 const state = {
-  activeTab: 'nha_hang',    // 'nha_hang' | 'thuoc'
+  activeTab: 'quay_thuoc',    // 'quay_thuoc' | 'thuoc'
   year:  new Date().getFullYear(),
   month: new Date().getMonth() + 1,
-  data:  { nha_hang: [], thuoc: [] },
+  data:  { quay_thuoc: [], thuoc: [] },
   selectedDay: null,
   pendingDelete: null,      // { type, ngay }
-  drafts: { nha_hang: {}, thuoc: {} }
+  drafts: { quay_thuoc: {}, thuoc: {} }
 };
 
 // ── DOM refs ─────────────────────────────────────────
 const $ = id => document.getElementById(id);
 const monthDisplay  = $('monthDisplay');
-const tabNhaHang    = $('tabNhaHang');
+const tabQuayThuoc    = $('tabQuayThuoc');
 const tabThuoc      = $('tabThuoc');
-const formNhaHang   = $('formNhaHang');
+const formQuayThuoc   = $('formQuayThuoc');
 const formThuoc     = $('formThuoc');
 const formTitle     = $('formTitle');
 const tableTitle    = $('tableTitle');
-const tableNhaHang  = $('tableNhaHang');
+const tableQuayThuoc  = $('tableQuayThuoc');
 const tableThuoc    = $('tableThuoc');
 const daySelector   = $('daySelector');
 const modalDelete   = $('modalDelete');
@@ -53,8 +53,8 @@ function daysInMonth() {
 }
 function saveCurrentFormToDraft() {
   if (!state.selectedDay) return;
-  const isNh = state.activeTab === 'nha_hang';
-  const tab = isNh ? 'nha_hang' : 'thuoc';
+  const isNh = state.activeTab === 'quay_thuoc';
+  const tab = isNh ? 'quay_thuoc' : 'thuoc';
   const dbRec = state.data[tab].find(r => r.ngay === state.selectedDay) || {};
   
   if (isNh) {
@@ -74,9 +74,9 @@ function saveCurrentFormToDraft() {
                     current.tien_tra_hang !== (dbRec.tien_tra_hang || 0);
     const isFormEmpty = !current.sang && !current.toi && !current.tien_ck && !current.tien_ck_thuoc && !current.tien_ck_dungcu && !current.tien_tra_hang;
     if (hasDiff && !(isFormEmpty && !dbRec.ngay)) {
-      state.drafts.nha_hang[state.selectedDay] = current;
+      state.drafts.quay_thuoc[state.selectedDay] = current;
     } else {
-      delete state.drafts.nha_hang[state.selectedDay];
+      delete state.drafts.quay_thuoc[state.selectedDay];
     }
   } else {
     const current = {
@@ -159,7 +159,7 @@ async function loadMonth() {
 async function loadKpi() {
   try {
     const s = await apiGet(`/api/summary/${monthKey()}`);
-    const nh = s.nha_hang, th = s.thuoc;
+    const nh = s.quay_thuoc, th = s.thuoc;
     const total = nh.tong_thang + th.tong_thang;
     const totalDays = nh.so_ngay + th.so_ngay;
 
@@ -178,7 +178,7 @@ function updateMonthDisplay() {
 }
 $('btnPrevMonth').addEventListener('click', () => {
   saveCurrentFormToDraft();
-  state.drafts = { nha_hang: {}, thuoc: {} };
+  state.drafts = { quay_thuoc: {}, thuoc: {} };
   if (--state.month < 1) { state.month = 12; state.year--; }
   state.selectedDay = null;
   updateMonthDisplay();
@@ -186,7 +186,7 @@ $('btnPrevMonth').addEventListener('click', () => {
 });
 $('btnNextMonth').addEventListener('click', () => {
   saveCurrentFormToDraft();
-  state.drafts = { nha_hang: {}, thuoc: {} };
+  state.drafts = { quay_thuoc: {}, thuoc: {} };
   if (++state.month > 12) { state.month = 1; state.year++; }
   state.selectedDay = null;
   updateMonthDisplay();
@@ -199,14 +199,14 @@ function switchTab(tab) {
   state.activeTab = tab;
   state.selectedDay = null;
 
-  const isNh = tab === 'nha_hang';
+  const isNh = tab === 'quay_thuoc';
 
-  tabNhaHang.className = 'tab-btn' + (isNh ? ' active-nh' : '');
+  tabQuayThuoc.className = 'tab-btn' + (isNh ? ' active-nh' : '');
   tabThuoc.className   = 'tab-btn' + (!isNh ? ' active-th' : '');
 
-  formNhaHang.classList.toggle('hidden', !isNh);
+  formQuayThuoc.classList.toggle('hidden', !isNh);
   formThuoc.classList.toggle('hidden',    isNh);
-  tableNhaHang.classList.toggle('hidden', !isNh);
+  tableQuayThuoc.classList.toggle('hidden', !isNh);
   tableThuoc.classList.toggle('hidden',    isNh);
 
   formTitle.textContent  = '📝 Nhập liệu — Quầy Thuốc';
@@ -215,14 +215,14 @@ function switchTab(tab) {
   clearInputs();
   renderDaySelector();
 }
-tabNhaHang.addEventListener('click', () => switchTab('nha_hang'));
+tabQuayThuoc.addEventListener('click', () => switchTab('quay_thuoc'));
 tabThuoc.addEventListener('click',   () => switchTab('thuoc'));
 
 // ── Day selector ─────────────────────────────────────
 function renderDaySelector() {
   const total = daysInMonth();
-  const isNh  = state.activeTab === 'nha_hang';
-  const existing = new Set((isNh ? state.data.nha_hang : state.data.thuoc).map(r => r.ngay));
+  const isNh  = state.activeTab === 'quay_thuoc';
+  const existing = new Set((isNh ? state.data.quay_thuoc : state.data.thuoc).map(r => r.ngay));
   const colorClass = isNh ? 'has-data-nh' : 'has-data-th';
   const selClass   = isNh ? 'selected-nh' : 'selected-th';
 
@@ -249,15 +249,15 @@ function selectDay(ngay, pill) {
   document.querySelectorAll('.day-pill').forEach(p => {
     p.classList.remove('selected-nh', 'selected-th');
   });
-  const selClass = state.activeTab === 'nha_hang' ? 'selected-nh' : 'selected-th';
+  const selClass = state.activeTab === 'quay_thuoc' ? 'selected-nh' : 'selected-th';
   pill.classList.add(selClass);
   loadDayIntoForm(ngay);
   renderDaySelector();
 }
 
 function loadDayIntoForm(ngay) {
-  const isNh = state.activeTab === 'nha_hang';
-  const tab = isNh ? 'nha_hang' : 'thuoc';
+  const isNh = state.activeTab === 'quay_thuoc';
+  const tab = isNh ? 'quay_thuoc' : 'thuoc';
   const draft = state.drafts[tab][ngay];
   clearInputs();
   
@@ -282,7 +282,7 @@ function loadDayIntoForm(ngay) {
     return;
   }
   
-  const recs  = isNh ? state.data.nha_hang : state.data.thuoc;
+  const recs  = isNh ? state.data.quay_thuoc : state.data.thuoc;
   const rec   = recs.find(r => r.ngay === ngay);
   if (!rec) return;
 
@@ -347,9 +347,9 @@ async function saveNh() {
     tien_tra_hang:  getNum('inp_tien_tra_hang'),
   };
   try {
-    await apiPost(`/api/records/${monthKey()}/nha_hang`, body);
+    await apiPost(`/api/records/${monthKey()}/quay_thuoc`, body);
     toast('Đã lưu ngày ' + state.selectedDay);
-    delete state.drafts.nha_hang[state.selectedDay];
+    delete state.drafts.quay_thuoc[state.selectedDay];
     await loadMonth();
   } catch(e) { toast(e.message, 'error'); }
 }
@@ -407,7 +407,7 @@ function renderAll() {
 }
 
 function renderTableNh() {
-  const recs = state.data.nha_hang || [];
+  const recs = state.data.quay_thuoc || [];
   const body = $('bodyNh');
   const foot = $('footNh');
 
@@ -430,7 +430,7 @@ function renderTableNh() {
       <td>
         <div class="actions-col">
           <button class="btn btn-outline btn-sm" onclick="editNh('${r.ngay}')">✏️</button>
-          <button class="btn btn-danger  btn-sm" onclick="confirmDelete('nha_hang','${r.ngay}')">🗑</button>
+          <button class="btn btn-danger  btn-sm" onclick="confirmDelete('quay_thuoc','${r.ngay}')">🗑</button>
         </div>
       </td>
     </tr>`).join('');
@@ -510,7 +510,7 @@ function fmtNum(n) {
 
 // ── Edit shortcuts ────────────────────────────────────
 function editNh(ngay) {
-  if (state.activeTab !== 'nha_hang') switchTab('nha_hang');
+  if (state.activeTab !== 'quay_thuoc') switchTab('quay_thuoc');
   state.selectedDay = ngay;
   renderDaySelector();
   loadDayIntoForm(ngay);

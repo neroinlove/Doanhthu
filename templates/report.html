@@ -29,7 +29,7 @@
 <!-- ── KPI STRIP ── -->
 <div class="kpi-strip" id="kpiStrip">
   <div class="kpi-card kpi-nh">
-    <div class="kpi-label">Nhà Hàng — Tổng tháng</div>
+    <div class="kpi-label">Quầy Thuốc — Tổng tháng</div>
     <div class="kpi-value" id="kpiNhTong">—</div>
     <div class="kpi-sub" id="kpiNhSub">TB: — / ngày</div>
   </div>
@@ -48,10 +48,10 @@
 <!-- ── REPORT GRID ── -->
 <div class="report-grid">
 
-  <!-- Biểu đồ: Doanh thu Nhà Hàng theo ngày -->
+  <!-- Biểu đồ: Doanh thu Quầy Thuốc theo ngày -->
   <div class="card">
     <div class="card-header">
-      <span class="card-title">🏠 Doanh thu Nhà Hàng theo ngày</span>
+      <span class="card-title">🏠 Doanh thu Quầy Thuốc theo ngày</span>
     </div>
     <div class="card-body">
       <canvas id="chartNh"></canvas>
@@ -84,10 +84,10 @@
     </div>
   </div>
 
-  <!-- Bảng phân tích theo kênh CK (Nhà Hàng) -->
+  <!-- Bảng phân tích theo kênh CK (Quầy Thuốc) -->
   <div class="card">
     <div class="card-header">
-      <span class="card-title">💳 Phân tích CK tháng này (Nhà Hàng)</span>
+      <span class="card-title">💳 Phân tích CK tháng này (Quầy Thuốc)</span>
     </div>
     <div class="card-body">
       <canvas id="chartCk" style="max-height:220px"></canvas>
@@ -178,10 +178,10 @@ async function loadReport() {
     const multiData = await fetch('/api/report').then(r => r.json());
 
     renderKpi(summary, multiData);
-    renderChartNh(data.nha_hang || []);
+    renderChartNh(data.quay_thuoc || []);
     renderChartTh(data.thuoc || []);
     renderChartMulti(multiData);
-    renderCkBreakdown(data.nha_hang || []);
+    renderCkBreakdown(data.quay_thuoc || []);
     renderStats(data, summary);
   } catch(e) {
     console.error(e);
@@ -189,7 +189,7 @@ async function loadReport() {
 }
 
 function renderKpi(s, multi) {
-  const nh = s.nha_hang, th = s.thuoc;
+  const nh = s.quay_thuoc, th = s.thuoc;
   const total = nh.tong_thang + th.tong_thang;
 
   $('kpiNhTong').textContent = fmtShort(nh.tong_thang);
@@ -261,7 +261,7 @@ function renderChartMulti(multi) {
     return `T${parseInt(mo)}/${y}`;
   }).reverse();
 
-  const nhData    = multi.map(m => m.nha_hang.tong_thang).reverse();
+  const nhData    = multi.map(m => m.quay_thuoc.tong_thang).reverse();
   const thuocData = multi.map(m => m.thuoc.tong_thang).reverse();
 
   const ctx = $('chartMulti').getContext('2d');
@@ -271,7 +271,7 @@ function renderChartMulti(multi) {
       labels,
       datasets: [
         {
-          label: '🏠 Nhà Hàng',
+          label: '🏠 Quầy Thuốc',
           data: nhData,
           backgroundColor: 'rgba(59,130,246,.7)',
           borderColor: '#3b82f6', borderWidth: 1, borderRadius: 4
@@ -342,7 +342,7 @@ function renderCkBreakdown(recs) {
 }
 
 function renderStats(data, summary) {
-  const nh = data.nha_hang || [], th = data.thuoc || [];
+  const nh = data.quay_thuoc || [], th = data.thuoc || [];
   const maxNh = nh.reduce((m,r) => r.tong > (m?.tong||0) ? r : m, null);
   const maxTh = th.reduce((m,r) => r.tong > (m?.tong||0) ? r : m, null);
 
@@ -368,7 +368,7 @@ function renderStats(data, summary) {
       <hr>
       <div style="display:flex;justify-content:space-between;align-items:center">
         <span class="text-muted text-sm">📅 Số ngày đã nhập (NH)</span>
-        <span style="font-weight:700">${summary.nha_hang.so_ngay} / ${new Date(state.year, state.month, 0).getDate()} ngày</span>
+        <span style="font-weight:700">${summary.quay_thuoc.so_ngay} / ${new Date(state.year, state.month, 0).getDate()} ngày</span>
       </div>
       <div style="display:flex;justify-content:space-between;align-items:center">
         <span class="text-muted text-sm">📅 Số ngày đã nhập (Thuốc)</span>

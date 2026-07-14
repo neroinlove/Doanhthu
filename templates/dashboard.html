@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>📊 Doanh Thu</title>
-  <meta name="description" content="Dashboard nhập và theo dõi doanh thu nhà hàng & thuốc theo ngày">
+  <meta name="description" content="Dashboard nhập và theo dõi doanh thu quầy thuốc & thuốc theo ngày">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -30,12 +30,12 @@
 
 <!-- ── TAB NAV ── -->
 <nav class="tab-nav hidden" id="tabNav">
-  <button class="tab-btn active-nh" id="tabNhaHang">🏠 Nhà Hàng</button>
+  <button class="tab-btn active-nh" id="tabQuayThuoc">🏠 Quầy Thuốc</button>
   <button class="tab-btn" id="tabThuoc">💊 Thuốc</button>
 </nav>
 
 <!-- ── KPI STRIP ── -->
-<<div class="kpi-strip" id="kpiStrip">
+<div class="kpi-strip" id="kpiStrip">
   <div class="kpi-card kpi-nh" style="grid-column: span 2;">
     <div class="kpi-label">Tổng doanh thu thuốc tháng</div>
     <div class="kpi-value" id="kpiNhTong">—</div>
@@ -67,8 +67,8 @@
       <div class="form-label">Chọn ngày</div>
       <div class="day-selector" id="daySelector"></div>
 
-      <!-- ── FORM NHÀ HÀNG ── -->
-      <div id="formNhaHang">
+      <!-- ── FORM QUẦY THUỐC ── -->
+      <div id="formQuayThuoc">
         <div class="form-row">
           <div class="form-group">
             <label class="form-label" for="inp_sang">☀️ Sáng</label>
@@ -158,8 +158,8 @@
     </div>
     <div class="card-body" style="padding: 0">
 
-      <!-- Bảng Nhà Hàng -->
-      <div id="tableNhaHang">
+      <!-- Bảng Quầy Thuốc -->
+      <div id="tableQuayThuoc">
         <div class="table-wrapper">
           <table id="tblNh">
             <thead>

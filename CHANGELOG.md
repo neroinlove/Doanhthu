@@ -1,5 +1,16 @@
 # Changelog — Dashboard Doanh Thu
 
+## [2026-07-14]
+
+### Changed
+- Chuẩn hóa toàn bộ tên nghiệp vụ từ cấu trúc cũ sang `quay_thuoc` trong API, JSON, giao diện, báo cáo, Excel và tài liệu.
+- Cá nhân hóa `.agents` cho dự án Dashboard Doanh Thu Quầy Thuốc.
+- Thêm cấu hình Git an toàn cho môi trường làm việc hai máy.
+
+### Fixed
+- Sửa thẻ HTML thừa ký tự `<` tại khối KPI.
+- Ghi file JSON theo cơ chế nguyên tử để giảm nguy cơ hỏng dữ liệu khi tiến trình bị ngắt.
+
 ## [2026-07-13]
 
 ### Added
@@ -23,7 +34,7 @@
 - CLI script `nhap_doanh_so.py` (backup plan, không dùng chính).
 
 ### Changed
-- Giao diện Quầy Thuốc duy nhất: Ẩn thanh chuyển tab, ẩn tab Thuốc cũ (4 ca), đổi nhãn "Nhà Hàng" thành "Quầy Thuốc" để phù hợp 100% với thực tế kinh doanh của quầy thuốc.
+- Giao diện Quầy Thuốc duy nhất: Ẩn thanh chuyển tab, ẩn tab Thuốc cũ (4 ca), đổi nhãn "Quầy Thuốc" thành "Quầy Thuốc" để phù hợp 100% với thực tế kinh doanh của quầy thuốc.
 - KPI tóm tắt rút gọn còn 2 thẻ: Tổng doanh thu thuốc tháng và Doanh thu trung bình ngày.
 - Cấu trúc cột mới (theo yêu cầu user):
   - Bỏ cột Trưa.
@@ -32,5 +43,5 @@
   - Thêm: Tiền trả hàng.
 
 ### Decision
-- Do dữ liệu quầy thuốc có các cột phân loại tiền CK thuốc/dụng cụ và ca Sáng/Tối khớp hoàn toàn với cấu trúc Nhà Hàng cũ, hệ thống sử dụng cấu trúc `nha_hang` trong DB để tương thích ngược nhưng hiển thị nhãn "Quầy Thuốc" trên giao diện.
+- Do dữ liệu quầy thuốc có các cột phân loại tiền CK thuốc/dụng cụ và ca Sáng/Tối khớp hoàn toàn với cấu trúc Quầy Thuốc cũ, hệ thống sử dụng cấu trúc `quay_thuoc` trong DB để tương thích ngược nhưng hiển thị nhãn "Quầy Thuốc" trên giao diện.
 - Tổng = Sáng + Tối + CK + CK Thuốc + CK Dụng cụ (Tiền trả hàng KHÔNG tính vào Tổng — đây là chi phí).
