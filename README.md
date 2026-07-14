@@ -80,4 +80,10 @@ Kiểm tra sức khỏe:
 - `GET /health`
 - Dùng để kiểm tra app còn sống trước khi NPM forward traffic
 
+Tài liệu triển khai Mac mini:
+
+- [deploy/mac-mini/README.md](deploy/mac-mini/README.md)
+- [deploy/mac-mini/doanhthu.env.example](deploy/mac-mini/doanhthu.env.example)
+- [deploy/mac-mini/com.neroinlove.doanhthu.plist.template](deploy/mac-mini/com.neroinlove.doanhthu.plist.template)
+
 Xem `docs/api/endpoints.md` và [CHANGELOG.md](CHANGELOG.md) để biết chi tiết.

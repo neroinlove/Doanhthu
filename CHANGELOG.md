@@ -7,6 +7,7 @@
 - Chế độ mobile render theo thẻ để xem dễ hơn trên điện thoại.
 - `GET /health` để proxy và service manager kiểm tra trạng thái app.
 - Cấu hình chạy production bằng biến môi trường `APP_HOST`, `APP_PORT`, `APP_DEBUG`.
+- Bộ tài liệu triển khai Mac mini M4 tại `deploy/mac-mini/` với template `launchd`.
 
 ### Changed
 - Cập nhật hướng deploy cho Mac mini M4 sau Nginx Proxy Manager và Cloudflare DNS.

@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## v1.7.0 - 2026-07-14
+- Bổ sung template deploy Mac mini M4 cho dự án Dashboard Doanh Thu.
+- Ghi nhận mẫu vận hành `localhost + 1 worker` khi app vẫn lưu JSON theo tháng.
+- Thêm tài liệu deploy để dùng chung cho các project copy bundle này sau này.
+
 ## v1.6.0 - 2026-07-14
 - Bổ sung chế độ `Desktop / Mobile` cho dashboard.
 - Thêm `GET /health` và cấu hình chạy production bằng biến môi trường cho Mac mini M4.

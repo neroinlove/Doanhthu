@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.neroinlove.doanhthu</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>__VENV_PYTHON__</string>
+    <string>-m</string>
+    <string>gunicorn</string>
+    <string>--workers</string>
+    <string>1</string>
+    <string>--bind</string>
+    <string>127.0.0.1:5001</string>
+    <string>app:app</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>__PROJECT_DIR__</string>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>APP_HOST</key>
+    <string>127.0.0.1</string>
+    <key>APP_PORT</key>
+    <string>5001</string>
+    <key>APP_DEBUG</key>
+    <string>0</string>
+  </dict>
+
+  <key>StandardOutPath</key>
+  <string>/tmp/doanhthu.out.log</string>
+  <key>StandardErrorPath</key>
+  <string>/tmp/doanhthu.err.log</string>
+
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+</dict>
+</plist>
