@@ -1,13 +1,15 @@
 """
 Dashboard Doanh Thu - Flask App
 ================================
-Web app nhập và theo dõi doanh thu quầy thuốc + thuốc theo ngày/tháng.
+Web app nhập và theo dõi doanh thu quầy thuốc theo ngày/tháng.
 """
 
 import json
 import os
 import re
+import subprocess
 import tempfile
+import unicodedata
 from datetime import datetime
 from calendar import monthrange
 from flask import Flask, render_template, request, jsonify
@@ -17,10 +19,12 @@ app.config["JSON_AS_ASCII"] = False
 
 BASE_DIR  = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR  = os.path.join(BASE_DIR, 'data', 'records')
+OCR_BIN   = os.path.join(BASE_DIR, 'scripts', 'ocr_image')
+OCR_SWIFT = os.path.join(BASE_DIR, 'scripts', 'ocr_image.swift')
 os.makedirs(DATA_DIR, exist_ok=True)
 
-APP_HOST = os.getenv("APP_HOST", "0.0.0.0")
-APP_PORT = int(os.getenv("APP_PORT", "5001"))
+APP_HOST = os.getenv("APP_HOST", "192.168.1.88")
+APP_PORT = int(os.getenv("APP_PORT", "5501"))
 APP_DEBUG = os.getenv("APP_DEBUG", "0").lower() in {"1", "true", "yes", "on"}
 
 # ─── Helpers ────────────────────────────────────────────────────
@@ -33,12 +37,15 @@ def load_month(month: str) -> dict:
     path = record_path(month)
     if os.path.exists(path):
         with open(path, 'r', encoding='utf-8') as f:
-            return json.load(f)
+            data = json.load(f)
+            return {
+                "month": month,
+                "quay_thuoc": data.get("quay_thuoc", []),
+            }
     # Default empty structure
     return {
         "month": month,
         "quay_thuoc": [],   # list of daily records
-        "thuoc":    []
     }
 
 def save_month(month: str, data: dict):
@@ -68,25 +75,7 @@ def compute_tong_nh(rec: dict) -> int:
             + safe_int(rec.get('tien_ck_thuoc'))
             + safe_int(rec.get('tien_ck_dungcu')))
 
-def compute_tong_thuoc(rec: dict) -> int:
-    return (safe_int(rec.get('ca1'))
-            + safe_int(rec.get('ca2'))
-            + safe_int(rec.get('ca3'))
-            + safe_int(rec.get('ca4'))
-            + safe_int(rec.get('ck')))
-
 def summary_nh(records: list) -> dict:
-    if not records:
-        return {"tong_thang": 0, "tb_ngay": 0, "max_ngay": 0, "so_ngay": 0}
-    tongs = [r.get('tong', 0) for r in records if r.get('tong', 0) > 0]
-    return {
-        "tong_thang": sum(tongs),
-        "tb_ngay":    round(sum(tongs) / len(tongs)) if tongs else 0,
-        "max_ngay":   max(tongs) if tongs else 0,
-        "so_ngay":    len(tongs)
-    }
-
-def summary_thuoc(records: list) -> dict:
     if not records:
         return {"tong_thang": 0, "tb_ngay": 0, "max_ngay": 0, "so_ngay": 0}
     tongs = [r.get('tong', 0) for r in records if r.get('tong', 0) > 0]
@@ -104,6 +93,82 @@ def list_available_months() -> list:
         if re.match(r'^\d{4}-\d{2}\.json$', fname):
             months.append(fname[:-5])
     return sorted(months, reverse=True)
+
+def normalize_text(value: str) -> str:
+    text = unicodedata.normalize("NFD", value).encode("ascii", "ignore").decode("ascii")
+    return re.sub(r"\s+", " ", text).lower().strip()
+
+def detect_import_field(texts: list) -> dict:
+    joined = normalize_text(" ".join(texts))
+    if "dung cu y te" in joined:
+        return {"field": "tien_ck_dungcu", "label": "Tiền CK dụng cụ"}
+    if "nha thuoc" in joined:
+        return {"field": "tien_ck_thuoc", "label": "Tiền CK thuốc"}
+    if "vi tam" in joined:
+        return {"field": "tien_ck", "label": "Tiền CK (TK chính)"}
+    return {"field": None, "label": None}
+
+def parse_ocr_lines(lines: list) -> dict:
+    texts = [str(item.get("text", "")) for item in lines]
+    joined = "\n".join(texts)
+    field_info = detect_import_field(texts)
+
+    value_items = []
+    for item in lines:
+        text = str(item.get("text", ""))
+        for match in re.finditer(r'(\d+(?:[.,]\d+)?)\s*(Tr|K)\b', text, flags=re.IGNORECASE):
+            raw_value = float(match.group(1).replace(',', '.'))
+            unit = match.group(2).lower()
+            amount = round(raw_value * (1_000_000 if unit == "tr" else 1_000))
+            value_items.append({
+                "value": float(match.group(1).replace(',', '.')),
+                "unit": unit,
+                "amount": amount,
+                "text": text,
+                "x": float(item.get("x", 0)),
+                "y": float(item.get("y", 0)),
+            })
+
+    axis_values = [item["value"] for item in value_items if item["unit"] == "tr" and item["x"] < 0.18]
+    if not axis_values:
+        tr_values = [item["value"] for item in value_items if item["unit"] == "tr"]
+        if tr_values:
+            axis_values = [max(tr_values)]
+
+    total = None
+    total_match = re.search(r'VND\s*([\d,\.]+)', joined, flags=re.IGNORECASE)
+    if total_match:
+        total = safe_int(total_match.group(1))
+
+    end_date = None
+    date_match = re.search(r'(\d{1,2})/(\d{1,2})/(\d{4})', joined)
+    if date_match:
+        day, month, year = date_match.groups()
+        end_date = f"{year}-{int(month):02d}-{int(day):02d}"
+
+    range_days = None
+    range_match = re.search(r'(\d+)\s*ngay\s*gan\s*(?:d)?ay', normalize_text(joined))
+    if range_match:
+        range_days = safe_int(range_match.group(1))
+
+    value_labels = [
+        item["amount"]
+        for item in sorted(
+            [item for item in value_items if item["x"] >= 0.18],
+            key=lambda item: item["x"]
+        )
+    ]
+
+    return {
+        "texts": texts,
+        "field": field_info["field"],
+        "field_label": field_info["label"],
+        "max_million": max(axis_values) if axis_values else None,
+        "revenue_total": total,
+        "end_date": end_date,
+        "range_days": range_days,
+        "value_labels": value_labels,
+    }
 
 
 # ─── Routes ─────────────────────────────────────────────────────
@@ -177,49 +242,11 @@ def upsert_nh(month):
     return jsonify({'message': 'OK', 'record': rec})
 
 
-@app.route('/api/records/<month>/thuoc', methods=['POST'])
-def upsert_thuoc(month):
-    """Thêm hoặc cập nhật 1 ngày thuốc."""
-    if not re.match(r'^\d{4}-\d{2}$', month):
-        return jsonify({'error': 'month phải có dạng YYYY-MM'}), 400
-
-    body = request.get_json(force=True)
-    ngay = str(body.get('ngay', '')).strip()
-    if not ngay:
-        return jsonify({'error': 'Thiếu trường ngay'}), 400
-
-    rec = {
-        "ngay":     ngay,
-        "ca1":      safe_int(body.get('ca1')),
-        "ca2":      safe_int(body.get('ca2')),
-        "ca3":      safe_int(body.get('ca3')),
-        "ca4":      safe_int(body.get('ca4')),
-        "ck":       safe_int(body.get('ck')),
-        "tra_them": safe_int(body.get('tra_them')),
-    }
-    rec["tong"] = compute_tong_thuoc(rec)
-
-    data = load_month(month)
-    existing = next((i for i, r in enumerate(data['thuoc']) if r['ngay'] == ngay), None)
-    if existing is not None:
-        data['thuoc'][existing] = rec
-    else:
-        data['thuoc'].append(rec)
-
-    def day_key(r):
-        try: return float(r['ngay'].split('.')[0])
-        except: return 0
-    data['thuoc'].sort(key=day_key)
-
-    save_month(month, data)
-    return jsonify({'message': 'OK', 'record': rec})
-
-
 @app.route('/api/records/<month>/<sheet_type>/<ngay>', methods=['DELETE'])
 def delete_record(month, sheet_type, ngay):
     """Xóa 1 dòng ngày."""
-    if sheet_type not in ('quay_thuoc', 'thuoc'):
-        return jsonify({'error': 'sheet_type phải là quay_thuoc hoặc thuoc'}), 400
+    if sheet_type != 'quay_thuoc':
+        return jsonify({'error': 'sheet_type phải là quay_thuoc'}), 400
     data = load_month(month)
     before = len(data[sheet_type])
     data[sheet_type] = [r for r in data[sheet_type] if r['ngay'] != ngay]
@@ -238,7 +265,6 @@ def get_summary(month):
     return jsonify({
         "month":    month,
         "quay_thuoc": summary_nh(data['quay_thuoc']),
-        "thuoc":    summary_thuoc(data['thuoc'])
     })
 
 
@@ -246,6 +272,45 @@ def get_summary(month):
 def get_months():
     """Danh sách tháng đã có dữ liệu."""
     return jsonify(list_available_months())
+
+
+@app.route('/api/analyze-image', methods=['POST'])
+def analyze_image():
+    """Đọc text trong ảnh import để tự detect mốc biểu đồ và ngày cập nhật."""
+    image_file = request.files.get('image')
+    if not image_file:
+        return jsonify({'error': 'Thiếu file ảnh'}), 400
+
+    suffix = os.path.splitext(image_file.filename or '')[1] or '.png'
+    fd, temp_path = tempfile.mkstemp(prefix='doanhthu-ocr-', suffix=suffix)
+    os.close(fd)
+
+    try:
+        image_file.save(temp_path)
+
+        if os.path.exists(OCR_BIN):
+            cmd = [OCR_BIN, temp_path]
+        else:
+            cmd = ['swift', OCR_SWIFT, temp_path]
+
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=20,
+            check=True,
+        )
+        lines = json.loads(result.stdout or '[]')
+        parsed = parse_ocr_lines(lines)
+        parsed["lines"] = lines
+        return jsonify(parsed)
+    except subprocess.TimeoutExpired:
+        return jsonify({'error': 'OCR quá lâu, vui lòng thử ảnh rõ hơn'}), 500
+    except Exception as exc:
+        return jsonify({'error': f'Không đọc được ảnh: {exc}'}), 500
+    finally:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
 
 
 # ─── API: Export Excel ───────────────────────────────────────────
@@ -292,21 +357,6 @@ def export_excel(month):
         for i, w in enumerate(col_widths_nh, 1):
             ws1.column_dimensions[openpyxl.utils.get_column_letter(i)].width = w
 
-        # Sheet Thuốc
-        ws2 = wb.create_sheet("Thuốc")
-        th_headers = ["Ngày", "6h30-13h", "13h-17h", "17h-20h",
-                      "20h-22h30", "CK", "Trả thêm", "Tổng"]
-        for ci, h in enumerate(th_headers, 1):
-            hdr(ws2.cell(1, ci, h), color="059669")
-        for ri, rec in enumerate(data['thuoc'], 2):
-            vals = [rec.get('ngay'), rec.get('ca1'), rec.get('ca2'),
-                    rec.get('ca3'), rec.get('ca4'), rec.get('ck'),
-                    rec.get('tra_them'), rec.get('tong')]
-            for ci, v in enumerate(vals, 1):
-                dat(ws2.cell(ri, ci, v))
-        for i in range(1, 9):
-            ws2.column_dimensions[openpyxl.utils.get_column_letter(i)].width = 12
-
         buf = io.BytesIO()
         wb.save(buf)
         buf.seek(0)
@@ -322,20 +372,17 @@ def export_excel(month):
 
 @app.route('/api/report')
 def report_data():
-    """Dữ liệu cho trang báo cáo: 2 tháng gần nhất."""
+    """Dữ liệu cho trang báo cáo: 6 tháng gần nhất."""
     months = list_available_months()
     result = []
     for m in months[:6]:   # Trả về 6 tháng gần nhất
         data = load_month(m)
         sm_nh    = summary_nh(data['quay_thuoc'])
-        sm_thuoc = summary_thuoc(data['thuoc'])
         result.append({
             "month":        m,
-            "quay_thuoc":     sm_nh,
-            "thuoc":        sm_thuoc,
-            "tong_chung":   sm_nh['tong_thang'] + sm_thuoc['tong_thang'],
+            "quay_thuoc":   sm_nh,
+            "tong_chung":   sm_nh['tong_thang'],
             "nh_days":      data['quay_thuoc'],
-            "thuoc_days":   data['thuoc'],
         })
     return jsonify(result)
 

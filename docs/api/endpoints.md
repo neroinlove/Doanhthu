@@ -1,7 +1,7 @@
 # API Documentation - Dashboard Doanh Thu
 
 Ngày cập nhật: 2026-07-14  
-Base URL local: `http://localhost:5001`  
+Base URL local: `http://192.168.1.88:5501`  
 Base URL production: `https://doanhthu.neroinlove.com`
 
 ---
@@ -13,9 +13,6 @@ Lấy toàn bộ dữ liệu tháng.
 
 ### POST `/api/records/<YYYY-MM>/quay_thuoc`
 Thêm hoặc cập nhật 1 ngày quầy thuốc.
-
-### POST `/api/records/<YYYY-MM>/thuoc`
-Thêm hoặc cập nhật 1 ngày thuốc.
 
 ### DELETE `/api/records/<month>/<type>/<ngay>`
 Xóa 1 dòng dữ liệu.
@@ -39,7 +36,7 @@ Dữ liệu 6 tháng gần nhất cho trang báo cáo Chart.js.
 
 ### GET `/api/export/<YYYY-MM>`
 Download file Excel tháng đó (`doanhthu_YYYY-MM.xlsx`).
-Gồm 2 sheets: **Quầy Thuốc** và **Thuốc**.
+Gồm 1 sheet: **Quầy Thuốc**.
 
 ---
 

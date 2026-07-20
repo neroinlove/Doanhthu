@@ -8,16 +8,16 @@ Web dashboard nhập và theo dõi doanh thu quầy thuốc theo ngày/tháng.
 cd f:\Project\Doanhthu
 pip install -r requirements.txt
 python app.py
-# → Mở http://localhost:5001
+# → Mở http://192.168.1.88:5501
 # hoặc:
-# APP_HOST=0.0.0.0 APP_PORT=5001 APP_DEBUG=0 python app.py
+# APP_HOST=192.168.1.88 APP_PORT=5501 APP_DEBUG=0 python app.py
 ```
 
 ## Cấu trúc
 
 ```
 Doanhthu/
-├── app.py                  # Flask backend (port 5001)
+├── app.py                  # Flask backend (port 5501)
 ├── requirements.txt        # flask, openpyxl
 ├── data/records/           # Dữ liệu JSON theo tháng (YYYY-MM.json)
 ├── templates/

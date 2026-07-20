@@ -1,17 +1,27 @@
 /* ====================================================
    Dashboard Doanh Thu - app.js
-   Tabs, month nav, CRUD, KPI, mobile/desktop view switch
+   Quầy thuốc only
    ==================================================== */
 
 const state = {
-  activeTab: 'quay_thuoc',
   viewMode: 'desktop',
   year: new Date().getFullYear(),
   month: new Date().getMonth() + 1,
-  data: { quay_thuoc: [], thuoc: [] },
+  data: { quay_thuoc: [] },
   selectedDay: null,
   pendingDelete: null,
-  drafts: { quay_thuoc: {}, thuoc: {} }
+  drafts: {},
+  autosaveTimer: null,
+  imageImportRows: [],
+  imageImportItems: [],
+  selectedImportField: null
+};
+
+const AUTOSAVE_DELAY_MS = 800;
+const IMAGE_IMPORT_FIELDS = {
+  tien_ck: 'Tiền CK (TK chính)',
+  tien_ck_dungcu: 'Tiền CK dụng cụ',
+  tien_ck_thuoc: 'Tiền CK thuốc'
 };
 
 const VIEW_KEY = 'doanhthu.viewMode';
@@ -19,20 +29,12 @@ const $ = id => document.getElementById(id);
 
 const el = {
   monthDisplay: $('monthDisplay'),
-  tabNav: $('tabNav'),
-  tabQuayThuoc: $('tabQuayThuoc'),
-  tabThuoc: $('tabThuoc'),
-  formQuayThuoc: $('formQuayThuoc'),
-  formThuoc: $('formThuoc'),
   formTitle: $('formTitle'),
   tableTitle: $('tableTitle'),
   mobileRecordsTitle: $('mobileRecordsTitle'),
   mobileRecordsSub: $('mobileRecordsSub'),
-  tableQuayThuoc: $('tableQuayThuoc'),
-  tableThuoc: $('tableThuoc'),
-  mobileRecords: $('mobileRecords'),
-  mobileRecordsList: $('mobileRecordsList'),
   daySelector: $('daySelector'),
+  mobileRecordsList: $('mobileRecordsList'),
   modalDelete: $('modalDelete'),
   modalDeleteMsg: $('modalDeleteMsg'),
   btnViewDesktop: $('btnViewDesktop'),
@@ -41,28 +43,17 @@ const el = {
   btnPrevMonth: $('btnPrevMonth'),
   btnNextMonth: $('btnNextMonth'),
   btnSaveNh: $('btnSaveNh'),
-  btnSaveTh: $('btnSaveTh')
-};
-
-const TAB_META = {
-  quay_thuoc: {
-    label: 'Quầy Thuốc',
-    tabButton: 'Quầy Thuốc',
-    formTitle: 'Nhập liệu - Quầy Thuốc',
-    tableTitle: 'Tổng hợp tháng - Quầy Thuốc',
-    mobileTitle: 'Danh sách ngày - Quầy Thuốc',
-    emptyIcon: '🏠',
-    mobileTotalClass: ''
-  },
-  thuoc: {
-    label: 'Thuốc',
-    tabButton: 'Thuốc',
-    formTitle: 'Nhập liệu - Thuốc',
-    tableTitle: 'Tổng hợp tháng - Thuốc',
-    mobileTitle: 'Danh sách ngày - Thuốc',
-    emptyIcon: '💊',
-    mobileTotalClass: 'th'
-  }
+  btnOpenImageImport: $('btnOpenImageImport'),
+  modalImageImport: $('modalImageImport'),
+  btnCloseImageImport: $('btnCloseImageImport'),
+  btnClearImageImport: $('btnClearImageImport'),
+  btnConfirmImageImport: $('btnConfirmImageImport'),
+  imageImportFiles: $('imageImportFiles'),
+  importEndDate: $('importEndDate'),
+  imageImportPreview: $('imageImportPreview'),
+  imageImportRows: $('imageImportRows'),
+  imageImportTabs: $('imageImportTabs'),
+  imageImportPreviewImg: $('imageImportPreviewImg')
 };
 
 function fmt(n) {
@@ -91,8 +82,22 @@ function daysInMonth() {
   return new Date(state.year, state.month, 0).getDate();
 }
 
-function getTabMeta(tab = state.activeTab) {
-  return TAB_META[tab] || TAB_META.quay_thuoc;
+function toIsoDate(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+function addDays(date, days) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+function recordDayKey(date) {
+  return `${date.getDate()}.${date.getMonth() + 1}`;
+}
+
+function recordMonthKey(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 }
 
 function saveViewMode(mode) {
@@ -116,16 +121,12 @@ function getNum(id) {
 }
 
 function clearInputs() {
-  [
-    'inp_sang', 'inp_toi', 'inp_tien_ck', 'inp_tien_ck_thuoc',
-    'inp_tien_ck_dungcu', 'inp_tien_tra_hang',
-    'inp_ca1', 'inp_ca2', 'inp_ca3', 'inp_ca4', 'inp_ck', 'inp_tra_them'
-  ].forEach(id => {
-    const input = $(id);
-    if (input) input.value = '';
-  });
+  ['inp_sang', 'inp_toi', 'inp_tien_ck', 'inp_tien_ck_thuoc', 'inp_tien_ck_dungcu', 'inp_tien_tra_hang']
+    .forEach(id => {
+      const input = $(id);
+      if (input) input.value = '';
+    });
   $('previewTongNh').textContent = '0 đ';
-  $('previewTongTh').textContent = '0 đ';
 }
 
 function updatePreviewNh() {
@@ -138,14 +139,34 @@ function updatePreviewNh() {
   $('previewTongNh').textContent = fmt(total);
 }
 
-function updatePreviewTh() {
-  const total =
-    getNum('inp_ca1') +
-    getNum('inp_ca2') +
-    getNum('inp_ca3') +
-    getNum('inp_ca4') +
-    getNum('inp_ck');
-  $('previewTongTh').textContent = fmt(total);
+function getCurrentNhRecord() {
+  return {
+    sang: getNum('inp_sang'),
+    toi: getNum('inp_toi'),
+    tien_ck: getNum('inp_tien_ck'),
+    tien_ck_thuoc: getNum('inp_tien_ck_thuoc'),
+    tien_ck_dungcu: getNum('inp_tien_ck_dungcu'),
+    tien_tra_hang: getNum('inp_tien_tra_hang')
+  };
+}
+
+function shouldSaveRecord(current, dbRec) {
+  const isEmpty =
+    current.sang === 0 &&
+    current.toi === 0 &&
+    current.tien_ck === 0 &&
+    current.tien_ck_thuoc === 0 &&
+    current.tien_ck_dungcu === 0 &&
+    current.tien_tra_hang === 0;
+  const hasDiff =
+    current.sang !== (dbRec.sang || 0) ||
+    current.toi !== (dbRec.toi || 0) ||
+    current.tien_ck !== (dbRec.tien_ck || 0) ||
+    current.tien_ck_thuoc !== (dbRec.tien_ck_thuoc || 0) ||
+    current.tien_ck_dungcu !== (dbRec.tien_ck_dungcu || 0) ||
+    current.tien_tra_hang !== (dbRec.tien_tra_hang || 0);
+
+  return hasDiff || (!!dbRec.ngay && isEmpty);
 }
 
 function toast(msg, type = 'success') {
@@ -180,72 +201,39 @@ async function apiDelete(url) {
   return json;
 }
 
+async function apiAnalyzeImage(file) {
+  const formData = new FormData();
+  formData.append('image', file);
+  const response = await fetch('/api/analyze-image', {
+    method: 'POST',
+    body: formData
+  });
+  const json = await response.json();
+  if (!response.ok) throw new Error(json.error || 'Lỗi đọc ảnh');
+  return json;
+}
+
 function updateMonthDisplay() {
   el.monthDisplay.textContent = `Tháng ${state.month} / ${state.year}`;
 }
 
 function updateSectionTitles() {
-  const meta = getTabMeta();
-  el.formTitle.textContent = `📝 ${meta.formTitle}`;
-  el.tableTitle.textContent = `📋 ${meta.tableTitle}`;
-  el.mobileRecordsTitle.textContent = meta.mobileTitle;
+  el.formTitle.textContent = '📝 Nhập liệu - Quầy Thuốc';
+  el.tableTitle.textContent = '📋 Tổng hợp tháng - Quầy Thuốc';
+  el.mobileRecordsTitle.textContent = 'Danh sách ngày - Quầy Thuốc';
   el.mobileRecordsSub.textContent = state.viewMode === 'mobile'
     ? 'Xem theo dạng thẻ, tối ưu cho điện thoại'
     : 'Chuyển sang Mobile để xem theo dạng thẻ';
-  el.tabQuayThuoc.className = `tab-btn ${state.activeTab === 'quay_thuoc' ? 'active-nh' : ''}`;
-  el.tabThuoc.className = `tab-btn ${state.activeTab === 'thuoc' ? 'active-th' : ''}`;
 }
 
 function saveCurrentFormToDraft() {
   if (!state.selectedDay) return;
-  const isNh = state.activeTab === 'quay_thuoc';
-  const tab = isNh ? 'quay_thuoc' : 'thuoc';
-  const dbRec = state.data[tab].find(r => r.ngay === state.selectedDay) || {};
-
-  if (isNh) {
-    const current = {
-      sang: getNum('inp_sang'),
-      toi: getNum('inp_toi'),
-      tien_ck: getNum('inp_tien_ck'),
-      tien_ck_thuoc: getNum('inp_tien_ck_thuoc'),
-      tien_ck_dungcu: getNum('inp_tien_ck_dungcu'),
-      tien_tra_hang: getNum('inp_tien_tra_hang')
-    };
-    const hasDiff =
-      current.sang !== (dbRec.sang || 0) ||
-      current.toi !== (dbRec.toi || 0) ||
-      current.tien_ck !== (dbRec.tien_ck || 0) ||
-      current.tien_ck_thuoc !== (dbRec.tien_ck_thuoc || 0) ||
-      current.tien_ck_dungcu !== (dbRec.tien_ck_dungcu || 0) ||
-      current.tien_tra_hang !== (dbRec.tien_tra_hang || 0);
-    const isFormEmpty = !current.sang && !current.toi && !current.tien_ck && !current.tien_ck_thuoc && !current.tien_ck_dungcu && !current.tien_tra_hang;
-    if (hasDiff && !(isFormEmpty && !dbRec.ngay)) {
-      state.drafts.quay_thuoc[state.selectedDay] = current;
-    } else {
-      delete state.drafts.quay_thuoc[state.selectedDay];
-    }
+  const dbRec = state.data.quay_thuoc.find(r => r.ngay === state.selectedDay) || {};
+  const current = getCurrentNhRecord();
+  if (shouldSaveRecord(current, dbRec)) {
+    state.drafts[state.selectedDay] = current;
   } else {
-    const current = {
-      ca1: getNum('inp_ca1'),
-      ca2: getNum('inp_ca2'),
-      ca3: getNum('inp_ca3'),
-      ca4: getNum('inp_ca4'),
-      ck: getNum('inp_ck'),
-      tra_them: getNum('inp_tra_them')
-    };
-    const hasDiff =
-      current.ca1 !== (dbRec.ca1 || 0) ||
-      current.ca2 !== (dbRec.ca2 || 0) ||
-      current.ca3 !== (dbRec.ca3 || 0) ||
-      current.ca4 !== (dbRec.ca4 || 0) ||
-      current.ck !== (dbRec.ck || 0) ||
-      current.tra_them !== (dbRec.tra_them || 0);
-    const isFormEmpty = !current.ca1 && !current.ca2 && !current.ca3 && !current.ca4 && !current.ck && !current.tra_them;
-    if (hasDiff && !(isFormEmpty && !dbRec.ngay)) {
-      state.drafts.thuoc[state.selectedDay] = current;
-    } else {
-      delete state.drafts.thuoc[state.selectedDay];
-    }
+    delete state.drafts[state.selectedDay];
   }
 }
 
@@ -254,8 +242,22 @@ function updateDraftIndicator() {
   if (!state.selectedDay) return;
   const pill = document.querySelector(`.day-pill[data-ngay="${state.selectedDay}"]`);
   if (!pill) return;
-  const tab = state.activeTab;
-  pill.classList.toggle('has-draft', !!state.drafts[tab][state.selectedDay]);
+  pill.classList.toggle('has-draft', !!state.drafts[state.selectedDay]);
+}
+
+function scheduleAutosave() {
+  if (!state.selectedDay) return;
+  clearTimeout(state.autosaveTimer);
+  state.autosaveTimer = setTimeout(() => {
+    persistCurrentForm(state.selectedDay, { silent: true }).catch(() => {});
+  }, AUTOSAVE_DELAY_MS);
+}
+
+function flushAutosave() {
+  if (!state.selectedDay) return;
+  clearTimeout(state.autosaveTimer);
+  state.autosaveTimer = null;
+  return persistCurrentForm(state.selectedDay, { silent: true }).catch(() => {});
 }
 
 async function loadMonth() {
@@ -272,38 +274,20 @@ async function loadKpi() {
   try {
     const summary = await apiGet(`/api/summary/${monthKey()}`);
     const nh = summary.quay_thuoc;
-    const th = summary.thuoc;
-    const total = nh.tong_thang + th.tong_thang;
-    const totalDays = Math.max(nh.so_ngay, th.so_ngay, 1);
+    const totalDays = Math.max(nh.so_ngay, 1);
 
     $('kpiNhTong').textContent = fmtShort(nh.tong_thang);
     $('kpiNhSub').textContent = `${nh.so_ngay} ngày • TB: ${fmtShort(nh.tb_ngay)}`;
-    $('kpiThTong').textContent = fmtShort(th.tong_thang);
-    $('kpiThSub').textContent = `${th.so_ngay} ngày • TB: ${fmtShort(th.tb_ngay)}`;
-    $('kpiAllTong').textContent = fmtShort(total);
-    $('kpiAllSub').textContent = `TB ngày: ${fmtShort(Math.round(total / totalDays))}`;
+    $('kpiAllTong').textContent = fmtShort(nh.tong_thang);
+    $('kpiAllSub').textContent = `TB ngày: ${fmtShort(Math.round(nh.tong_thang / totalDays))}`;
   } catch {
     // KPI is best-effort
   }
 }
 
-function switchTab(tab) {
-  saveCurrentFormToDraft();
-  state.activeTab = tab;
-  state.selectedDay = null;
-  clearInputs();
-  updateSectionTitles();
-  renderDaySelector();
-  renderMobileRecords();
-}
-
 function renderDaySelector() {
   const total = daysInMonth();
-  const isNh = state.activeTab === 'quay_thuoc';
-  const existing = new Set((isNh ? state.data.quay_thuoc : state.data.thuoc).map(r => r.ngay));
-  const colorClass = isNh ? 'has-data-nh' : 'has-data-th';
-  const selectedClass = isNh ? 'selected-nh' : 'selected-th';
-  const tab = state.activeTab;
+  const existing = new Set((state.data.quay_thuoc || []).map(r => r.ngay));
 
   el.daySelector.innerHTML = '';
   for (let day = 1; day <= total; day += 1) {
@@ -313,9 +297,9 @@ function renderDaySelector() {
     pill.className = 'day-pill';
     pill.textContent = day;
     pill.dataset.ngay = ngay;
-    if (existing.has(ngay)) pill.classList.add(colorClass);
-    if (ngay === state.selectedDay) pill.classList.add(selectedClass);
-    if (state.drafts[tab][ngay]) pill.classList.add('has-draft');
+    if (existing.has(ngay)) pill.classList.add('has-data-nh');
+    if (ngay === state.selectedDay) pill.classList.add('selected-nh');
+    if (state.drafts[ngay]) pill.classList.add('has-draft');
     pill.addEventListener('click', () => selectDay(ngay, pill));
     el.daySelector.appendChild(pill);
   }
@@ -323,62 +307,39 @@ function renderDaySelector() {
 
 function selectDay(ngay, pill) {
   saveCurrentFormToDraft();
+  flushAutosave();
   state.selectedDay = ngay;
-  document.querySelectorAll('.day-pill').forEach(button => {
-    button.classList.remove('selected-nh', 'selected-th');
-  });
-  pill.classList.add(state.activeTab === 'quay_thuoc' ? 'selected-nh' : 'selected-th');
+  document.querySelectorAll('.day-pill').forEach(button => button.classList.remove('selected-nh'));
+  pill.classList.add('selected-nh');
   loadDayIntoForm(ngay);
   renderDaySelector();
 }
 
 function loadDayIntoForm(ngay) {
-  const isNh = state.activeTab === 'quay_thuoc';
-  const tab = isNh ? 'quay_thuoc' : 'thuoc';
-  const draft = state.drafts[tab][ngay];
+  const draft = state.drafts[ngay];
   clearInputs();
 
   if (draft) {
-    if (isNh) {
-      $('inp_sang').value = formatInputNumber(draft.sang);
-      $('inp_toi').value = formatInputNumber(draft.toi);
-      $('inp_tien_ck').value = formatInputNumber(draft.tien_ck);
-      $('inp_tien_ck_thuoc').value = formatInputNumber(draft.tien_ck_thuoc);
-      $('inp_tien_ck_dungcu').value = formatInputNumber(draft.tien_ck_dungcu);
-      $('inp_tien_tra_hang').value = formatInputNumber(draft.tien_tra_hang);
-      updatePreviewNh();
-    } else {
-      $('inp_ca1').value = formatInputNumber(draft.ca1);
-      $('inp_ca2').value = formatInputNumber(draft.ca2);
-      $('inp_ca3').value = formatInputNumber(draft.ca3);
-      $('inp_ca4').value = formatInputNumber(draft.ca4);
-      $('inp_ck').value = formatInputNumber(draft.ck);
-      $('inp_tra_them').value = formatInputNumber(draft.tra_them);
-      updatePreviewTh();
-    }
+    $('inp_sang').value = formatInputNumber(draft.sang);
+    $('inp_toi').value = formatInputNumber(draft.toi);
+    $('inp_tien_ck').value = formatInputNumber(draft.tien_ck);
+    $('inp_tien_ck_thuoc').value = formatInputNumber(draft.tien_ck_thuoc);
+    $('inp_tien_ck_dungcu').value = formatInputNumber(draft.tien_ck_dungcu);
+    $('inp_tien_tra_hang').value = formatInputNumber(draft.tien_tra_hang);
+    updatePreviewNh();
     return;
   }
 
-  const rec = (isNh ? state.data.quay_thuoc : state.data.thuoc).find(r => r.ngay === ngay);
+  const rec = (state.data.quay_thuoc || []).find(r => r.ngay === ngay);
   if (!rec) return;
 
-  if (isNh) {
-    $('inp_sang').value = formatInputNumber(rec.sang);
-    $('inp_toi').value = formatInputNumber(rec.toi);
-    $('inp_tien_ck').value = formatInputNumber(rec.tien_ck);
-    $('inp_tien_ck_thuoc').value = formatInputNumber(rec.tien_ck_thuoc);
-    $('inp_tien_ck_dungcu').value = formatInputNumber(rec.tien_ck_dungcu);
-    $('inp_tien_tra_hang').value = formatInputNumber(rec.tien_tra_hang);
-    updatePreviewNh();
-  } else {
-    $('inp_ca1').value = formatInputNumber(rec.ca1);
-    $('inp_ca2').value = formatInputNumber(rec.ca2);
-    $('inp_ca3').value = formatInputNumber(rec.ca3);
-    $('inp_ca4').value = formatInputNumber(rec.ca4);
-    $('inp_ck').value = formatInputNumber(rec.ck);
-    $('inp_tra_them').value = formatInputNumber(rec.tra_them);
-    updatePreviewTh();
-  }
+  $('inp_sang').value = formatInputNumber(rec.sang);
+  $('inp_toi').value = formatInputNumber(rec.toi);
+  $('inp_tien_ck').value = formatInputNumber(rec.tien_ck);
+  $('inp_tien_ck_thuoc').value = formatInputNumber(rec.tien_ck_thuoc);
+  $('inp_tien_ck_dungcu').value = formatInputNumber(rec.tien_ck_dungcu);
+  $('inp_tien_tra_hang').value = formatInputNumber(rec.tien_tra_hang);
+  updatePreviewNh();
 }
 
 function renderTableNh() {
@@ -411,7 +372,7 @@ function renderTableNh() {
     </tr>
   `).join('');
 
-  const sum = (key) => recs.reduce((total, rec) => total + (rec[key] || 0), 0);
+  const sum = key => recs.reduce((total, rec) => total + (rec[key] || 0), 0);
   const sumTong = recs.reduce((total, rec) => total + (rec.tong || 0), 0);
 
   foot.innerHTML = `
@@ -429,65 +390,15 @@ function renderTableNh() {
   `;
 }
 
-function renderTableTh() {
-  const recs = state.data.thuoc || [];
-  const body = $('bodyTh');
-  const foot = $('footTh');
-
-  if (!recs.length) {
-    body.innerHTML = `<tr><td colspan="9"><div class="empty-state"><span class="icon">💊</span><p>Chưa có dữ liệu tháng này</p></div></td></tr>`;
-    foot.innerHTML = '';
-    return;
-  }
-
-  body.innerHTML = recs.map(rec => `
-    <tr>
-      <td><strong>${rec.ngay}</strong></td>
-      <td>${fmtNum(rec.ca1)}</td>
-      <td>${fmtNum(rec.ca2)}</td>
-      <td>${fmtNum(rec.ca3)}</td>
-      <td>${fmtNum(rec.ca4)}</td>
-      <td>${fmtNum(rec.ck)}</td>
-      <td>${fmtNum(rec.tra_them)}</td>
-      <td class="col-tong col-tong-th">${fmtNum(rec.tong)}</td>
-      <td>
-        <div class="actions-col">
-          <button class="btn btn-outline btn-sm" onclick="editTh('${rec.ngay}')">✏️</button>
-          <button class="btn btn-danger btn-sm" onclick="confirmDelete('thuoc','${rec.ngay}')">🗑</button>
-        </div>
-      </td>
-    </tr>
-  `).join('');
-
-  const sum = (key) => recs.reduce((total, rec) => total + (rec[key] || 0), 0);
-  const sumTong = recs.reduce((total, rec) => total + (rec.tong || 0), 0);
-
-  foot.innerHTML = `
-    <tr class="row-total">
-      <td><strong>TỔNG (${recs.length} ngày)</strong></td>
-      <td>${fmtNum(sum('ca1'))}</td>
-      <td>${fmtNum(sum('ca2'))}</td>
-      <td>${fmtNum(sum('ca3'))}</td>
-      <td>${fmtNum(sum('ca4'))}</td>
-      <td>${fmtNum(sum('ck'))}</td>
-      <td>${fmtNum(sum('tra_them'))}</td>
-      <td class="col-tong col-tong-th">${fmtNum(sumTong)}</td>
-      <td></td>
-    </tr>
-  `;
-}
-
 function renderMobileRecords() {
-  const meta = getTabMeta();
-  const recs = state.data[state.activeTab] || [];
+  const recs = state.data.quay_thuoc || [];
   const list = el.mobileRecordsList;
-
   if (!list) return;
 
   if (!recs.length) {
     list.innerHTML = `
       <div class="empty-state">
-        <span class="icon">${meta.emptyIcon}</span>
+        <span class="icon">🏠</span>
         <p>Chưa có dữ liệu tháng này</p>
       </div>
     `;
@@ -495,31 +406,20 @@ function renderMobileRecords() {
   }
 
   list.innerHTML = recs.map(rec => {
-    const fields = state.activeTab === 'quay_thuoc'
-      ? [
-        ['Sáng', rec.sang],
-        ['Tối', rec.toi],
-        ['CK', rec.tien_ck],
-        ['CK thuốc', rec.tien_ck_thuoc],
-        ['CK dụng cụ', rec.tien_ck_dungcu],
-        ['Trả hàng', rec.tien_tra_hang]
-      ]
-      : [
-        ['6h30-13h', rec.ca1],
-        ['13h-17h', rec.ca2],
-        ['17h-20h', rec.ca3],
-        ['20h-22h30', rec.ca4],
-        ['CK', rec.ck],
-        ['Trả thêm', rec.tra_them]
-      ];
-
-    const totalClass = state.activeTab === 'quay_thuoc' ? '' : 'th';
+    const fields = [
+      ['Sáng', rec.sang],
+      ['Tối', rec.toi],
+      ['CK', rec.tien_ck],
+      ['CK thuốc', rec.tien_ck_thuoc],
+      ['CK dụng cụ', rec.tien_ck_dungcu],
+      ['Trả hàng', rec.tien_tra_hang]
+    ];
 
     return `
       <article class="mobile-record-card">
         <div class="mobile-record-card-head">
           <div class="mobile-record-day">${rec.ngay}</div>
-          <div class="mobile-record-total ${totalClass}">${fmt(rec.tong)}</div>
+          <div class="mobile-record-total">${fmt(rec.tong)}</div>
         </div>
         <div class="mobile-record-grid">
           ${fields.map(([label, value]) => `
@@ -530,8 +430,8 @@ function renderMobileRecords() {
           `).join('')}
         </div>
         <div class="mobile-record-actions">
-          <button class="btn btn-outline btn-sm" type="button" onclick="${state.activeTab === 'quay_thuoc' ? `editNh('${rec.ngay}')` : `editTh('${rec.ngay}')`}">Sửa</button>
-          <button class="btn btn-danger btn-sm" type="button" onclick="confirmDelete('${state.activeTab}','${rec.ngay}')">Xóa</button>
+          <button class="btn btn-outline btn-sm" type="button" onclick="editNh('${rec.ngay}')">Sửa</button>
+          <button class="btn btn-danger btn-sm" type="button" onclick="confirmDelete('quay_thuoc','${rec.ngay}')">Xóa</button>
         </div>
       </article>
     `;
@@ -541,7 +441,6 @@ function renderMobileRecords() {
 function renderAll() {
   updateSectionTitles();
   renderTableNh();
-  renderTableTh();
   renderMobileRecords();
   renderDaySelector();
 }
@@ -552,57 +451,41 @@ function fmtNum(n) {
 }
 
 async function saveNh() {
-  if (!state.selectedDay) {
-    toast('Vui lòng chọn ngày', 'error');
-    return;
-  }
-  const body = {
-    ngay: state.selectedDay,
-    sang: getNum('inp_sang'),
-    toi: getNum('inp_toi'),
-    tien_ck: getNum('inp_tien_ck'),
-    tien_ck_thuoc: getNum('inp_tien_ck_thuoc'),
-    tien_ck_dungcu: getNum('inp_tien_ck_dungcu'),
-    tien_tra_hang: getNum('inp_tien_tra_hang')
-  };
-  try {
-    await apiPost(`/api/records/${monthKey()}/quay_thuoc`, body);
-    toast(`Đã lưu ngày ${state.selectedDay}`);
-    delete state.drafts.quay_thuoc[state.selectedDay];
-    await loadMonth();
-  } catch (error) {
-    toast(error.message, 'error');
-  }
+  await persistCurrentForm(state.selectedDay, { silent: false });
 }
 
-async function saveTh() {
-  if (!state.selectedDay) {
-    toast('Vui lòng chọn ngày', 'error');
-    return;
+async function persistCurrentForm(day = state.selectedDay, { silent = true } = {}) {
+  if (!day) {
+    if (!silent) toast('Vui lòng chọn ngày', 'error');
+    return false;
   }
-  const body = {
-    ngay: state.selectedDay,
-    ca1: getNum('inp_ca1'),
-    ca2: getNum('inp_ca2'),
-    ca3: getNum('inp_ca3'),
-    ca4: getNum('inp_ca4'),
-    ck: getNum('inp_ck'),
-    tra_them: getNum('inp_tra_them')
-  };
+
+  const dbRec = state.data.quay_thuoc.find(r => r.ngay === day) || {};
+  const current = getCurrentNhRecord();
+  if (!shouldSaveRecord(current, dbRec)) {
+    delete state.drafts[day];
+    if (!silent) toast('Không có thay đổi để lưu', 'success');
+    return false;
+  }
+
   try {
-    await apiPost(`/api/records/${monthKey()}/thuoc`, body);
-    toast(`Đã lưu ngày ${state.selectedDay}`);
-    delete state.drafts.thuoc[state.selectedDay];
+    await apiPost(`/api/records/${monthKey()}/quay_thuoc`, {
+      ngay: day,
+      ...current
+    });
+    delete state.drafts[day];
     await loadMonth();
+    if (!silent) toast(`Đã lưu ngày ${day}`);
+    return true;
   } catch (error) {
     toast(error.message, 'error');
+    return false;
   }
 }
 
 function confirmDelete(type, ngay) {
   state.pendingDelete = { type, ngay };
-  const meta = getTabMeta(type);
-  el.modalDeleteMsg.textContent = `Xóa dữ liệu ngày ${ngay} (${meta.label})?`;
+  el.modalDeleteMsg.textContent = `Xóa dữ liệu ngày ${ngay} (Quầy Thuốc)?`;
   el.modalDelete.classList.remove('hidden');
 }
 
@@ -614,7 +497,7 @@ async function handleDeleteConfirm() {
     await apiDelete(`/api/records/${monthKey()}/${type}/${encodeURIComponent(ngay)}`);
     toast(`Đã xóa ngày ${ngay}`);
     state.pendingDelete = null;
-    delete state.drafts[type][ngay];
+    delete state.drafts[ngay];
     if (state.selectedDay === ngay) {
       state.selectedDay = null;
       clearInputs();
@@ -626,15 +509,6 @@ async function handleDeleteConfirm() {
 }
 
 function editNh(ngay) {
-  if (state.activeTab !== 'quay_thuoc') switchTab('quay_thuoc');
-  state.selectedDay = ngay;
-  renderDaySelector();
-  loadDayIntoForm(ngay);
-  $('formCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
-
-function editTh(ngay) {
-  if (state.activeTab !== 'thuoc') switchTab('thuoc');
   state.selectedDay = ngay;
   renderDaySelector();
   loadDayIntoForm(ngay);
@@ -665,27 +539,430 @@ function formatInputOnType(event) {
   input.setSelectionRange(cursorPosition, cursorPosition);
 }
 
+function formatPlainAmountInput(event) {
+  const input = event.target;
+  const rawValue = input.value.replace(/\D/g, '');
+  input.value = rawValue ? Number(rawValue).toLocaleString('vi-VN') : '';
+}
+
+function parsePlainAmount(value) {
+  return parseInt(String(value || '').replace(/\D/g, ''), 10) || 0;
+}
+
+function openImageImportModal() {
+  if (!el.importEndDate.value) {
+    el.importEndDate.value = toIsoDate(new Date());
+  }
+  el.modalImageImport.classList.remove('hidden');
+}
+
+function closeImageImportModal() {
+  el.modalImageImport.classList.add('hidden');
+}
+
+function clearImageImport() {
+  state.imageImportRows = [];
+  state.imageImportItems.forEach(item => {
+    if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
+  });
+  state.imageImportItems = [];
+  state.selectedImportField = null;
+  el.imageImportFiles.value = '';
+  renderImageImportPreview();
+}
+
+function loadImageFromFile(file) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => {
+      URL.revokeObjectURL(image.src);
+      resolve(image);
+    };
+    image.onerror = reject;
+    image.src = URL.createObjectURL(file);
+  });
+}
+
+function isChartBarPixel(r, g, b) {
+  return r < 95 && g > 140 && b > 140 && g - r > 45 && b - r > 45 && Math.abs(g - b) < 75;
+}
+
+async function detectRevenueBars(file, options = {}) {
+  const maxMillion = Number(options.maxMillion) || 6;
+  const expectedDays = Number(options.expectedDays) || 0;
+  const image = await loadImageFromFile(file);
+  const canvas = document.createElement('canvas');
+  const width = image.naturalWidth || image.width;
+  const height = image.naturalHeight || image.height;
+  canvas.width = width;
+  canvas.height = height;
+
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(image, 0, 0, width, height);
+
+  const xStart = Math.floor(width * 0.10);
+  const xEnd = Math.floor(width * 0.92);
+  const yStart = Math.floor(height * 0.24);
+  const yEnd = Math.floor(height * 0.48);
+  const imageData = ctx.getImageData(xStart, yStart, xEnd - xStart, yEnd - yStart);
+  const data = imageData.data;
+  const regionWidth = imageData.width;
+  const regionHeight = imageData.height;
+  const columns = [];
+
+  for (let x = 0; x < regionWidth; x += 1) {
+    let count = 0;
+    let top = regionHeight;
+    let bottom = 0;
+
+    for (let y = 0; y < regionHeight; y += 1) {
+      const idx = (y * regionWidth + x) * 4;
+      if (isChartBarPixel(data[idx], data[idx + 1], data[idx + 2])) {
+        count += 1;
+        if (y < top) top = y;
+        if (y > bottom) bottom = y;
+      }
+    }
+
+    columns.push({ x, count, top, bottom });
+  }
+
+  const activeThreshold = Math.max(8, Math.round(regionHeight * 0.012));
+  const groups = [];
+  let current = null;
+
+  columns.forEach(col => {
+    if (col.count >= activeThreshold) {
+      if (!current) {
+        current = { start: col.x, end: col.x, top: col.top, bottom: col.bottom, count: col.count };
+      } else {
+        current.end = col.x;
+        current.top = Math.min(current.top, col.top);
+        current.bottom = Math.max(current.bottom, col.bottom);
+        current.count += col.count;
+      }
+    } else if (current) {
+      groups.push(current);
+      current = null;
+    }
+  });
+  if (current) groups.push(current);
+
+  const minWidth = Math.max(4, Math.round(width * 0.004));
+  const maxWidth = Math.max(24, Math.round(width * 0.045));
+  const bars = groups
+    .filter(group => group.end - group.start + 1 >= minWidth && group.end - group.start + 1 <= maxWidth)
+    .map(group => ({
+      ...group,
+      center: xStart + Math.round((group.start + group.end) / 2),
+      top: yStart + group.top,
+      bottom: yStart + group.bottom,
+      width: group.end - group.start + 1
+    }))
+    .sort((a, b) => a.center - b.center);
+
+  if (!bars.length) {
+    throw new Error('Không tìm thấy cột doanh thu trong ảnh');
+  }
+
+  const axisTop = Math.min(...bars.map(bar => bar.top));
+  const bottoms = bars.map(bar => bar.bottom).sort((a, b) => a - b);
+  const axisBottom = bottoms[Math.floor(bottoms.length * 0.9)] || Math.max(...bars.map(bar => bar.bottom));
+  const axisHeight = Math.max(1, axisBottom - axisTop);
+  const confidence = bars.length >= 25 && bars.length <= 31 ? 85 : 65;
+  const firstCenter = bars[0]?.center || 0;
+  const lastCenter = bars[bars.length - 1]?.center || firstCenter;
+  const slotWidth = expectedDays > 1 && lastCenter > firstCenter
+    ? (lastCenter - firstCenter) / (expectedDays - 1)
+    : 0;
+
+  const detected = bars.map((bar, index) => {
+    const ratio = Math.max(0, Math.min(1, (axisBottom - bar.top) / axisHeight));
+    const rawAmount = ratio * maxMillion * 1_000_000;
+    const dayOffset = slotWidth
+      ? Math.max(0, Math.min(expectedDays - 1, Math.round((bar.center - firstCenter) / slotWidth)))
+      : index;
+    return {
+      amount: Math.round(rawAmount / 1_000) * 1_000,
+      ratio,
+      confidence,
+      dayOffset
+    };
+  });
+
+  const valueLabels = Array.isArray(options.valueLabels) ? options.valueLabels : [];
+  if (valueLabels.length && valueLabels.length === detected.length) {
+    return detected.map((bar, index) => ({
+      ...bar,
+      amount: Math.round(valueLabels[index] / 1_000) * 1_000,
+      confidence: 98
+    }));
+  }
+
+  if (valueLabels.length && options.revenueTotal && valueLabels.length === detected.length - 1) {
+    const knownTotal = valueLabels.reduce((total, amount) => total + amount, 0);
+    const missingAmount = Math.max(0, options.revenueTotal - knownTotal);
+    return detected.map((bar, index) => ({
+      ...bar,
+      amount: Math.round((valueLabels[index] ?? missingAmount) / 1_000) * 1_000,
+      confidence: 96
+    }));
+  }
+
+  if (options.revenueTotal) {
+    const estimatedTotal = detected.reduce((total, bar) => total + bar.amount, 0);
+    const factor = estimatedTotal ? options.revenueTotal / estimatedTotal : 1;
+    return detected.map(bar => ({
+      ...bar,
+      amount: Math.round((bar.amount * factor) / 1_000) * 1_000,
+      confidence: Math.min(95, bar.confidence + 8)
+    }));
+  }
+
+  return detected;
+}
+
+async function rebuildImageImportRows() {
+  const endDateValue = el.importEndDate.value;
+  const fallbackEndDate = endDateValue ? new Date(`${endDateValue}T00:00:00`) : new Date();
+  const nextRows = [];
+
+  for (const item of state.imageImportItems) {
+    const endDate = item.endDate ? new Date(`${item.endDate}T00:00:00`) : fallbackEndDate;
+    const labels = Array.isArray(item.valueLabels) ? item.valueLabels : [];
+    const bars = labels.length
+      ? labels.map(amount => ({
+        amount: Math.round(amount / 1_000) * 1_000,
+        confidence: 98
+      }))
+      : await detectRevenueBars(item.file, {
+        maxMillion: item.maxMillion || 6,
+        revenueTotal: item.revenueTotal,
+        valueLabels: item.valueLabels,
+        expectedDays: item.rangeDays || 0
+      });
+    bars.forEach((bar, index) => {
+      const rangeDays = labels.length ? bars.length : (Number(item.rangeDays) || bars.length);
+      const dayOffset = labels.length ? index : (Number.isInteger(bar.dayOffset) ? bar.dayOffset : index);
+      const date = addDays(endDate, dayOffset - rangeDays + 1);
+      nextRows.push({
+        id: `${item.field}-${toIsoDate(date)}`,
+        field: item.field,
+        source: item.source,
+        date: toIsoDate(date),
+        month: recordMonthKey(date),
+        ngay: recordDayKey(date),
+        amount: bar.amount,
+        confidence: bar.confidence
+      });
+    });
+  }
+
+  state.imageImportRows = nextRows.sort((a, b) => a.date.localeCompare(b.date) || a.field.localeCompare(b.field));
+  renderImageImportPreview();
+}
+
+async function autoDetectImageSettings(file) {
+  const result = await apiAnalyzeImage(file);
+  if (result.end_date) {
+    el.importEndDate.value = result.end_date;
+  }
+
+  return result;
+}
+
+function renderImageImportPreview() {
+  if (!state.imageImportRows.length) {
+    el.imageImportPreview.classList.add('hidden');
+    el.imageImportRows.innerHTML = '';
+    el.imageImportTabs.innerHTML = '';
+    el.imageImportPreviewImg.removeAttribute('src');
+    return;
+  }
+
+  el.imageImportPreview.classList.remove('hidden');
+  if (!state.selectedImportField || !state.imageImportItems.some(item => item.field === state.selectedImportField)) {
+    state.selectedImportField = state.imageImportItems[0]?.field || null;
+  }
+
+  el.imageImportTabs.innerHTML = state.imageImportItems.map(item => `
+    <button
+      type="button"
+      class="import-image-tab ${item.field === state.selectedImportField ? 'active' : ''}"
+      data-import-preview-field="${item.field}"
+    >
+      ${IMAGE_IMPORT_FIELDS[item.field]}
+    </button>
+  `).join('');
+
+  const selectedItem = state.imageImportItems.find(item => item.field === state.selectedImportField);
+  if (selectedItem?.previewUrl) {
+    el.imageImportPreviewImg.src = selectedItem.previewUrl;
+    el.imageImportPreviewImg.alt = selectedItem.source || IMAGE_IMPORT_FIELDS[selectedItem.field];
+  }
+
+  el.imageImportRows.innerHTML = state.imageImportRows.map((row, index) => `
+    <tr class="import-row-source ${row.field === state.selectedImportField ? 'active' : ''}" data-import-row-field="${row.field}">
+      <td>${row.ngay}</td>
+      <td>${IMAGE_IMPORT_FIELDS[row.field]}</td>
+      <td>
+        <input
+          type="text"
+          inputmode="numeric"
+          class="form-input import-amount-input"
+          data-import-index="${index}"
+          value="${formatInputNumber(row.amount)}"
+        >
+      </td>
+      <td>${row.source || '—'}</td>
+      <td><span class="import-confidence">${row.confidence}%</span></td>
+    </tr>
+  `).join('');
+
+  document.querySelectorAll('[data-import-preview-field]').forEach(button => {
+    button.addEventListener('click', () => {
+      state.selectedImportField = button.dataset.importPreviewField;
+      renderImageImportPreview();
+    });
+  });
+
+  document.querySelectorAll('[data-import-row-field]').forEach(row => {
+    row.addEventListener('click', event => {
+      if (event.target.matches('input')) return;
+      state.selectedImportField = row.dataset.importRowField;
+      renderImageImportPreview();
+    });
+  });
+
+  document.querySelectorAll('[data-import-index]').forEach(input => {
+    input.addEventListener('input', formatPlainAmountInput);
+    input.addEventListener('input', () => {
+      const index = Number(input.dataset.importIndex);
+      state.imageImportRows[index].amount = parsePlainAmount(input.value);
+    });
+  });
+}
+
+async function handleImageImportFileChange(event) {
+  const input = event.target;
+  const files = Array.from(input.files || []);
+  if (!files.length) return;
+
+  try {
+    for (const file of files) {
+      const detected = await autoDetectImageSettings(file);
+      if (!detected.field) {
+        throw new Error(`Không nhận diện được loại ví trong ảnh ${file.name}`);
+      }
+
+      state.imageImportItems
+        .filter(item => item.field === detected.field && item.previewUrl)
+        .forEach(item => URL.revokeObjectURL(item.previewUrl));
+      state.imageImportItems = state.imageImportItems.filter(item => item.field !== detected.field);
+      state.imageImportItems.push({
+        file,
+        field: detected.field,
+        source: detected.field_label || IMAGE_IMPORT_FIELDS[detected.field],
+        maxMillion: Number(detected.max_million) || 6,
+        revenueTotal: Number(detected.revenue_total) || 0,
+        rangeDays: Number(detected.range_days) || 0,
+        valueLabels: Array.isArray(detected.value_labels) ? detected.value_labels : [],
+        endDate: detected.end_date || null,
+        previewUrl: URL.createObjectURL(file)
+      });
+      state.selectedImportField = detected.field;
+    }
+
+    await rebuildImageImportRows();
+    toast(`Đã nhận diện ${files.length} ảnh, vui lòng kiểm tra bảng preview`);
+  } catch (error) {
+    input.value = '';
+    toast(error.message, 'error');
+  }
+}
+
+function buildEmptyRecord(ngay) {
+  return {
+    ngay,
+    sang: 0,
+    toi: 0,
+    tien_ck: 0,
+    tien_ck_thuoc: 0,
+    tien_ck_dungcu: 0,
+    tien_tra_hang: 0
+  };
+}
+
+async function confirmImageImport() {
+  if (!state.imageImportRows.length) {
+    toast('Chưa có dữ liệu ảnh để nhập', 'error');
+    return;
+  }
+
+  const monthCache = {};
+  let importedCount = 0;
+  let skippedCount = 0;
+  try {
+    el.btnConfirmImageImport.classList.add('loading');
+
+    for (const row of state.imageImportRows) {
+      if (!row.amount) continue;
+      if (!monthCache[row.month]) {
+        monthCache[row.month] = await apiGet(`/api/records/${row.month}`);
+      }
+
+      const records = monthCache[row.month].quay_thuoc;
+      const existingIndex = records.findIndex(item => item.ngay === row.ngay);
+      const record = existingIndex >= 0 ? records[existingIndex] : buildEmptyRecord(row.ngay);
+      if (Number(record[row.field]) > 0) {
+        skippedCount += 1;
+        continue;
+      }
+
+      record[row.field] = row.amount;
+
+      await apiPost(`/api/records/${row.month}/quay_thuoc`, record);
+      if (existingIndex >= 0) {
+        records[existingIndex] = record;
+      } else {
+        records.push(record);
+      }
+      importedCount += 1;
+    }
+
+    closeImageImportModal();
+    clearImageImport();
+    await loadMonth();
+    toast(skippedCount
+      ? `Đã nhập ${importedCount} ô, bỏ qua ${skippedCount} ô đã có dữ liệu`
+      : `Đã nhập ${importedCount} ô từ ảnh`);
+  } catch (error) {
+    toast(error.message, 'error');
+  } finally {
+    el.btnConfirmImageImport.classList.remove('loading');
+  }
+}
+
 function wireNumericInputs() {
   const nhInputs = ['inp_sang', 'inp_toi', 'inp_tien_ck', 'inp_tien_ck_thuoc', 'inp_tien_ck_dungcu', 'inp_tien_tra_hang'];
-  const thInputs = ['inp_ca1', 'inp_ca2', 'inp_ca3', 'inp_ca4', 'inp_ck', 'inp_tra_them'];
-
-  [...nhInputs, ...thInputs].forEach(id => {
+  nhInputs.forEach(id => {
     const input = $(id);
     if (!input) return;
     input.addEventListener('input', formatInputOnType);
-    input.addEventListener('input', input.id.startsWith('inp_ca') || input.id === 'inp_ck' || input.id === 'inp_tra_them' ? updatePreviewTh : updatePreviewNh);
+    input.addEventListener('input', updatePreviewNh);
     input.addEventListener('input', updateDraftIndicator);
+    input.addEventListener('input', scheduleAutosave);
+    input.addEventListener('blur', flushAutosave);
   });
 }
 
 function wireEvents() {
-  el.tabQuayThuoc.addEventListener('click', () => switchTab('quay_thuoc'));
-  el.tabThuoc.addEventListener('click', () => switchTab('thuoc'));
   el.btnViewDesktop.addEventListener('click', () => saveViewMode('desktop'));
   el.btnViewMobile.addEventListener('click', () => saveViewMode('mobile'));
   el.btnPrevMonth.addEventListener('click', () => {
     saveCurrentFormToDraft();
-    state.drafts = { quay_thuoc: {}, thuoc: {} };
+    flushAutosave();
+    state.drafts = {};
     state.selectedDay = null;
     state.month -= 1;
     if (state.month < 1) {
@@ -697,7 +974,8 @@ function wireEvents() {
   });
   el.btnNextMonth.addEventListener('click', () => {
     saveCurrentFormToDraft();
-    state.drafts = { quay_thuoc: {}, thuoc: {} };
+    flushAutosave();
+    state.drafts = {};
     state.selectedDay = null;
     state.month += 1;
     if (state.month > 12) {
@@ -708,21 +986,26 @@ function wireEvents() {
     loadMonth();
   });
   el.btnSaveNh.addEventListener('click', saveNh);
-  el.btnSaveTh.addEventListener('click', saveTh);
   $('btnCloseModal').addEventListener('click', () => el.modalDelete.classList.add('hidden'));
   $('btnCancelDelete').addEventListener('click', () => el.modalDelete.classList.add('hidden'));
   $('btnConfirmDelete').addEventListener('click', handleDeleteConfirm);
   el.btnExport.addEventListener('click', () => {
     window.location.href = `/api/export/${monthKey()}`;
   });
+  el.btnOpenImageImport.addEventListener('click', openImageImportModal);
+  el.btnCloseImageImport.addEventListener('click', closeImageImportModal);
+  el.btnClearImageImport.addEventListener('click', clearImageImport);
+  el.btnConfirmImageImport.addEventListener('click', confirmImageImport);
+  el.importEndDate.addEventListener('change', () => {
+    rebuildImageImportRows().catch(error => toast(error.message, 'error'));
+  });
+  el.imageImportFiles.addEventListener('change', handleImageImportFileChange);
 }
 
 window.editNh = editNh;
-window.editTh = editTh;
 window.confirmDelete = confirmDelete;
 
 document.addEventListener('DOMContentLoaded', () => {
-  el.tabNav?.classList.remove('hidden');
   saveViewMode(getInitialViewMode());
   updateMonthDisplay();
   updateSectionTitles();

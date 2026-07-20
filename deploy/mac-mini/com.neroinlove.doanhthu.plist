@@ -7,7 +7,7 @@
 
   <key>ProgramArguments</key>
   <array>
-    <string>__VENV_PYTHON__</string>
+    <string>/Users/longpham/.gemini/antigravity/scratch/doanhthu/.venv/bin/python</string>
     <string>-m</string>
     <string>gunicorn</string>
     <string>--workers</string>
@@ -18,7 +18,7 @@
   </array>
 
   <key>WorkingDirectory</key>
-  <string>__PROJECT_DIR__</string>
+  <string>/Users/longpham/.gemini/antigravity/scratch/doanhthu</string>
 
   <key>EnvironmentVariables</key>
   <dict>

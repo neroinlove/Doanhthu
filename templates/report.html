@@ -11,7 +11,6 @@
 </head>
 <body>
 
-<!-- ── HEADER ── -->
 <header class="header">
   <div class="header-left">
     <h1 class="header-title">📈 Báo Cáo Doanh Thu</h1>
@@ -26,29 +25,20 @@
   </div>
 </header>
 
-<!-- ── KPI STRIP ── -->
 <div class="kpi-strip" id="kpiStrip">
   <div class="kpi-card kpi-nh">
     <div class="kpi-label">Quầy Thuốc — Tổng tháng</div>
     <div class="kpi-value" id="kpiNhTong">—</div>
     <div class="kpi-sub" id="kpiNhSub">TB: — / ngày</div>
   </div>
-  <div class="kpi-card kpi-th">
-    <div class="kpi-label">Thuốc — Tổng tháng</div>
-    <div class="kpi-value" id="kpiThTong">—</div>
-    <div class="kpi-sub" id="kpiThSub">TB: — / ngày</div>
-  </div>
   <div class="kpi-card kpi-all">
-    <div class="kpi-label">Tổng chung</div>
+    <div class="kpi-label">Số ngày đã nhập</div>
     <div class="kpi-value" id="kpiAllTong">—</div>
-    <div class="kpi-sub" id="kpiVsLast">vs tháng trước: —</div>
+    <div class="kpi-sub" id="kpiVsLast">—</div>
   </div>
 </div>
 
-<!-- ── REPORT GRID ── -->
 <div class="report-grid">
-
-  <!-- Biểu đồ: Doanh thu Quầy Thuốc theo ngày -->
   <div class="card">
     <div class="card-header">
       <span class="card-title">🏠 Doanh thu Quầy Thuốc theo ngày</span>
@@ -61,20 +51,6 @@
     </div>
   </div>
 
-  <!-- Biểu đồ: Doanh thu Thuốc theo ngày -->
-  <div class="card">
-    <div class="card-header">
-      <span class="card-title">💊 Doanh thu Thuốc theo ngày</span>
-    </div>
-    <div class="card-body">
-      <canvas id="chartTh"></canvas>
-      <div class="empty-state hidden" id="emptyTh">
-        <span class="icon">💊</span><p>Chưa có dữ liệu</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- Biểu đồ: Tổng hợp nhiều tháng -->
   <div class="card report-full">
     <div class="card-header">
       <span class="card-title">📊 So sánh doanh thu 6 tháng gần nhất</span>
@@ -84,10 +60,9 @@
     </div>
   </div>
 
-  <!-- Bảng phân tích theo kênh CK (Quầy Thuốc) -->
   <div class="card">
     <div class="card-header">
-      <span class="card-title">💳 Phân tích CK tháng này (Quầy Thuốc)</span>
+      <span class="card-title">💳 Phân tích CK tháng này</span>
     </div>
     <div class="card-body">
       <canvas id="chartCk" style="max-height:220px"></canvas>
@@ -95,7 +70,6 @@
     </div>
   </div>
 
-  <!-- Thống kê nhanh -->
   <div class="card">
     <div class="card-header">
       <span class="card-title">⚡ Thống kê nhanh</span>
@@ -104,8 +78,7 @@
       <div id="statsQuick"></div>
     </div>
   </div>
-
-</div><!-- report-grid -->
+</div>
 
 <div class="toast-container" id="toastContainer"></div>
 
@@ -116,19 +89,24 @@ let state = {
   year:  new Date().getFullYear(),
   month: new Date().getMonth() + 1,
 };
-let chartNh = null, chartTh = null, chartMulti = null, chartCk = null;
+
+let chartNh = null, chartMulti = null, chartCk = null;
 
 function monthKey() {
   return `${state.year}-${String(state.month).padStart(2,'0')}`;
 }
+
 function fmtShort(n) {
-  if (!n) return '—';
+  if (!n && n !== 0) return '—';
   const v = Number(n);
   if (v >= 1_000_000) return (v / 1_000_000).toFixed(1) + 'M đ';
-  if (v >= 1_000)     return (v / 1_000).toFixed(0)     + 'k đ';
+  if (v >= 1_000) return (v / 1_000).toFixed(0) + 'k đ';
   return v + ' đ';
 }
-function fmtVnd(n) { return Number(n).toLocaleString('vi-VN') + ' đ'; }
+
+function fmtVnd(n) {
+  return Number(n).toLocaleString('vi-VN') + ' đ';
+}
 
 function updateMonthDisplay() {
   $('monthDisplay').textContent = `Tháng ${state.month} / ${state.year}`;
@@ -172,41 +150,36 @@ function makeBarChart(canvasId, labels, datasets) {
 
 async function loadReport() {
   try {
-    // Current month records
     const data = await fetch(`/api/records/${monthKey()}`).then(r => r.json());
     const summary = await fetch(`/api/summary/${monthKey()}`).then(r => r.json());
     const multiData = await fetch('/api/report').then(r => r.json());
 
     renderKpi(summary, multiData);
     renderChartNh(data.quay_thuoc || []);
-    renderChartTh(data.thuoc || []);
     renderChartMulti(multiData);
     renderCkBreakdown(data.quay_thuoc || []);
     renderStats(data, summary);
-  } catch(e) {
+  } catch (e) {
     console.error(e);
   }
 }
 
 function renderKpi(s, multi) {
-  const nh = s.quay_thuoc, th = s.thuoc;
-  const total = nh.tong_thang + th.tong_thang;
-
+  const nh = s.quay_thuoc;
   $('kpiNhTong').textContent = fmtShort(nh.tong_thang);
   $('kpiNhSub').textContent  = `${nh.so_ngay} ngày • TB: ${fmtShort(nh.tb_ngay)}`;
-  $('kpiThTong').textContent = fmtShort(th.tong_thang);
-  $('kpiThSub').textContent  = `${th.so_ngay} ngày • TB: ${fmtShort(th.tb_ngay)}`;
-  $('kpiAllTong').textContent = fmtShort(total);
+  $('kpiAllTong').textContent = String(nh.so_ngay);
 
-  // So sánh với tháng trước
   if (multi.length >= 2) {
     const prev = multi[1].tong_chung;
-    const diff = total - prev;
+    const diff = nh.tong_thang - prev;
     const pct  = prev ? ((diff / prev) * 100).toFixed(1) : 0;
     $('kpiVsLast').textContent = diff >= 0
       ? `▲ +${fmtShort(diff)} so với tháng trước (+${pct}%)`
       : `▼ ${fmtShort(Math.abs(diff))} so với tháng trước (${pct}%)`;
     $('kpiVsLast').style.color = diff >= 0 ? '#34d399' : '#f87171';
+  } else {
+    $('kpiVsLast').textContent = 'Chưa đủ dữ liệu để so sánh';
   }
 }
 
@@ -226,28 +199,9 @@ function renderChartNh(recs) {
       label: 'Tổng (đ)',
       data: recs.map(r => r.tong || 0),
       backgroundColor: 'rgba(59,130,246,.75)',
-      borderColor: '#3b82f6', borderWidth: 1, borderRadius: 4
-    }]
-  );
-}
-
-function renderChartTh(recs) {
-  if (chartTh) { chartTh.destroy(); chartTh = null; }
-  if (!recs.length) {
-    $('emptyTh').classList.remove('hidden');
-    $('chartTh').classList.add('hidden');
-    return;
-  }
-  $('emptyTh').classList.add('hidden');
-  $('chartTh').classList.remove('hidden');
-
-  chartTh = makeBarChart('chartTh',
-    recs.map(r => r.ngay),
-    [{
-      label: 'Tổng (đ)',
-      data: recs.map(r => r.tong || 0),
-      backgroundColor: 'rgba(16,185,129,.75)',
-      borderColor: '#10b981', borderWidth: 1, borderRadius: 4
+      borderColor: '#3b82f6',
+      borderWidth: 1,
+      borderRadius: 4
     }]
   );
 }
@@ -261,28 +215,21 @@ function renderChartMulti(multi) {
     return `T${parseInt(mo)}/${y}`;
   }).reverse();
 
-  const nhData    = multi.map(m => m.quay_thuoc.tong_thang).reverse();
-  const thuocData = multi.map(m => m.thuoc.tong_thang).reverse();
+  const nhData = multi.map(m => m.quay_thuoc.tong_thang).reverse();
 
   const ctx = $('chartMulti').getContext('2d');
   chartMulti = new Chart(ctx, {
     type: 'bar',
     data: {
       labels,
-      datasets: [
-        {
-          label: '🏠 Quầy Thuốc',
-          data: nhData,
-          backgroundColor: 'rgba(59,130,246,.7)',
-          borderColor: '#3b82f6', borderWidth: 1, borderRadius: 4
-        },
-        {
-          label: '💊 Thuốc',
-          data: thuocData,
-          backgroundColor: 'rgba(16,185,129,.7)',
-          borderColor: '#10b981', borderWidth: 1, borderRadius: 4
-        }
-      ]
+      datasets: [{
+        label: '🏠 Quầy Thuốc',
+        data: nhData,
+        backgroundColor: 'rgba(59,130,246,.7)',
+        borderColor: '#3b82f6',
+        borderWidth: 1,
+        borderRadius: 4
+      }]
     },
     options: {
       responsive: true,
@@ -300,9 +247,9 @@ function renderChartMulti(multi) {
 
 function renderCkBreakdown(recs) {
   if (chartCk) { chartCk.destroy(); chartCk = null; }
-  const ck    = recs.reduce((s,r) => s + (r.tien_ck||0), 0);
-  const ckTh  = recs.reduce((s,r) => s + (r.tien_ck_thuoc||0), 0);
-  const ckDC  = recs.reduce((s,r) => s + (r.tien_ck_dungcu||0), 0);
+  const ck = recs.reduce((s, r) => s + (r.tien_ck || 0), 0);
+  const ckTh = recs.reduce((s, r) => s + (r.tien_ck_thuoc || 0), 0);
+  const ckDC = recs.reduce((s, r) => s + (r.tien_ck_dungcu || 0), 0);
   const total = ck + ckTh + ckDC;
 
   if (!total) {
@@ -319,7 +266,7 @@ function renderCkBreakdown(recs) {
       labels: ['CK Chính', 'CK Thuốc', 'CK Dụng cụ'],
       datasets: [{
         data: [ck, ckTh, ckDC],
-        backgroundColor: ['#3b82f6','#10b981','#f59e0b'],
+        backgroundColor: ['#3b82f6', '#10b981', '#f59e0b'],
         borderWidth: 0
       }]
     },
@@ -342,49 +289,37 @@ function renderCkBreakdown(recs) {
 }
 
 function renderStats(data, summary) {
-  const nh = data.quay_thuoc || [], th = data.thuoc || [];
-  const maxNh = nh.reduce((m,r) => r.tong > (m?.tong||0) ? r : m, null);
-  const maxTh = th.reduce((m,r) => r.tong > (m?.tong||0) ? r : m, null);
+  const nh = data.quay_thuoc || [];
+  const maxNh = nh.reduce((m, r) => r.tong > (m?.tong || 0) ? r : m, null);
 
   $('statsQuick').innerHTML = `
     <div style="display:flex;flex-direction:column;gap:.75rem">
       <div style="display:flex;justify-content:space-between;align-items:center">
-        <span class="text-muted text-sm">🏠 Ngày cao nhất (NH)</span>
+        <span class="text-muted text-sm">🏠 Ngày cao nhất</span>
         <span style="font-weight:700;color:#60a5fa">${maxNh ? maxNh.ngay + ' — ' + fmtVnd(maxNh.tong) : '—'}</span>
-      </div>
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <span class="text-muted text-sm">💊 Ngày cao nhất (Thuốc)</span>
-        <span style="font-weight:700;color:#34d399">${maxTh ? maxTh.ngay + ' — ' + fmtVnd(maxTh.tong) : '—'}</span>
       </div>
       <hr>
       <div style="display:flex;justify-content:space-between;align-items:center">
         <span class="text-muted text-sm">📦 Tổng tiền trả hàng</span>
-        <span style="font-weight:700;color:#f87171">${fmtVnd(nh.reduce((s,r)=>s+(r.tien_tra_hang||0),0))}</span>
+        <span style="font-weight:700;color:#f87171">${fmtVnd(nh.reduce((s, r) => s + (r.tien_tra_hang || 0), 0))}</span>
       </div>
       <div style="display:flex;justify-content:space-between;align-items:center">
-        <span class="text-muted text-sm">💊 Tổng trả thêm (Thuốc)</span>
-        <span style="font-weight:700;color:#fbbf24">${fmtVnd(th.reduce((s,r)=>s+(r.tra_them||0),0))}</span>
-      </div>
-      <hr>
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <span class="text-muted text-sm">📅 Số ngày đã nhập (NH)</span>
+        <span class="text-muted text-sm">📅 Số ngày đã nhập</span>
         <span style="font-weight:700">${summary.quay_thuoc.so_ngay} / ${new Date(state.year, state.month, 0).getDate()} ngày</span>
-      </div>
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <span class="text-muted text-sm">📅 Số ngày đã nhập (Thuốc)</span>
-        <span style="font-weight:700">${summary.thuoc.so_ngay} / ${new Date(state.year, state.month, 0).getDate()} ngày</span>
       </div>
     </div>`;
 }
 
-// Month navigation
 $('btnPrevMonth').addEventListener('click', () => {
   if (--state.month < 1) { state.month = 12; state.year--; }
-  updateMonthDisplay(); loadReport();
+  updateMonthDisplay();
+  loadReport();
 });
+
 $('btnNextMonth').addEventListener('click', () => {
   if (++state.month > 12) { state.month = 1; state.year++; }
-  updateMonthDisplay(); loadReport();
+  updateMonthDisplay();
+  loadReport();
 });
 
 updateMonthDisplay();

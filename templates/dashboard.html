@@ -4,11 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>📊 Doanh Thu</title>
-  <meta name="description" content="Dashboard nhập và theo dõi doanh thu quầy thuốc & thuốc theo ngày">
+  <meta name="description" content="Dashboard nhập và theo dõi doanh thu quầy thuốc theo ngày">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=20260716-image-import-no-overwrite">
 </head>
 <body>
 
@@ -28,27 +28,17 @@
       <button class="view-switch-btn" id="btnViewMobile" type="button">📱 Mobile</button>
     </div>
     <a href="/report" class="btn btn-outline btn-sm">📈 Báo cáo</a>
+    <button class="btn btn-outline btn-sm" id="btnOpenImageImport" type="button">🖼 Import ảnh</button>
     <button class="btn btn-gold btn-sm" id="btnExport">⬇ Export Excel</button>
   </div>
 </header>
 
-<!-- ── TAB NAV ── -->
-<nav class="tab-nav hidden" id="tabNav">
-  <button class="tab-btn active-nh" id="tabQuayThuoc">🏠 Quầy Thuốc</button>
-  <button class="tab-btn" id="tabThuoc">💊 Thuốc</button>
-</nav>
-
 <!-- ── KPI STRIP ── -->
 <div class="kpi-strip" id="kpiStrip">
   <div class="kpi-card kpi-nh" style="grid-column: span 2;">
-    <div class="kpi-label">Tổng doanh thu thuốc tháng</div>
+    <div class="kpi-label">Tổng doanh thu quầy thuốc tháng</div>
     <div class="kpi-value" id="kpiNhTong">—</div>
     <div class="kpi-sub" id="kpiNhSub">0 ngày có dữ liệu</div>
-  </div>
-  <div class="kpi-card kpi-th hidden">
-    <div class="kpi-label">Tổng tháng (Thuốc)</div>
-    <div class="kpi-value" id="kpiThTong">—</div>
-    <div class="kpi-sub" id="kpiThSub">0 ngày có dữ liệu</div>
   </div>
   <div class="kpi-card kpi-all" style="grid-column: span 1;">
     <div class="kpi-label">Doanh thu trung bình ngày</div>
@@ -111,47 +101,6 @@
         <button class="btn btn-primary" style="width:100%" id="btnSaveNh">💾 Lưu ngày này</button>
       </div>
 
-      <!-- ── FORM THUỐC ── -->
-      <div id="formThuoc" class="hidden">
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label" for="inp_ca1">🌅 6h30-13h</label>
-            <input type="text" inputmode="numeric" class="form-input" id="inp_ca1" placeholder="0">
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="inp_ca2">☀️ 13h-17h</label>
-            <input type="text" inputmode="numeric" class="form-input" id="inp_ca2" placeholder="0">
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label" for="inp_ca3">🌇 17h-20h</label>
-            <input type="text" inputmode="numeric" class="form-input" id="inp_ca3" placeholder="0">
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="inp_ca4">🌙 20h-22h30</label>
-            <input type="text" inputmode="numeric" class="form-input" id="inp_ca4" placeholder="0">
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label" for="inp_ck">💳 Tiền CK</label>
-            <input type="text" inputmode="numeric" class="form-input" id="inp_ck" placeholder="0">
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="inp_tra_them">➕ Tiền trả thêm</label>
-            <input type="text" inputmode="numeric" class="form-input" id="inp_tra_them" placeholder="0">
-          </div>
-        </div>
-
-        <div class="tong-preview">
-          <span class="tong-label">TỔNG DỰ KIẾN</span>
-          <span class="tong-value green" id="previewTongTh">0 đ</span>
-        </div>
-
-        <button class="btn btn-green" style="width:100%" id="btnSaveTh">💾 Lưu ngày này</button>
-      </div>
-
     </div><!-- card-body -->
   </section>
 
@@ -187,31 +136,6 @@
         </div>
       </div>
 
-      <!-- Bảng Thuốc -->
-      <div id="tableThuoc" class="hidden desktop-table-wrap">
-        <div class="table-wrapper">
-          <table id="tblTh">
-            <thead>
-              <tr>
-                <th>Ngày</th>
-                <th>6h30-13h</th>
-                <th>13h-17h</th>
-                <th>17h-20h</th>
-                <th>20h-22h30</th>
-                <th>CK</th>
-                <th>Trả thêm</th>
-                <th class="col-tong">Tổng</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody id="bodyTh">
-              <tr><td colspan="9"><div class="empty-state"><span class="icon">💊</span><p>Chưa có dữ liệu tháng này</p></div></td></tr>
-            </tbody>
-            <tfoot id="footTh"></tfoot>
-          </table>
-        </div>
-      </div>
-
       <div id="mobileRecords" class="mobile-records hidden">
         <div class="mobile-records-head">
           <span class="mobile-records-title" id="mobileRecordsTitle">Mobile view</span>
@@ -224,6 +148,63 @@
   </section>
 
 </div><!-- main -->
+
+<!-- ── IMAGE IMPORT MODAL ── -->
+<div class="modal-overlay hidden" id="modalImageImport">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <span class="modal-title">Import doanh thu từ ảnh</span>
+      <button class="modal-close" id="btnCloseImageImport" type="button">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="import-grid import-grid-single">
+        <div class="import-drop">
+          <span class="import-title">Chọn ảnh doanh thu</span>
+          <span class="import-sub">Có thể chọn cùng lúc ảnh Ví Tâm, HKD Dụng Cụ Y Tế Vì Tâm, HKD Nhà thuốc Vì Tâm.</span>
+          <input type="file" accept="image/*" id="imageImportFiles" multiple>
+        </div>
+      </div>
+
+      <div class="import-settings">
+        <label class="form-group">
+          <span class="form-label">Ngày cuối trên ảnh (tự detect)</span>
+          <input type="date" class="form-input" id="importEndDate">
+        </label>
+      </div>
+
+      <div class="import-preview hidden" id="imageImportPreview">
+        <div class="import-preview-head">
+          <strong>Dữ liệu nhận diện</strong>
+          <span class="text-muted text-sm">Bạn có thể sửa số trước khi nhập.</span>
+        </div>
+        <div class="import-review-layout">
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Ngày</th>
+                  <th>Cột nhập</th>
+                  <th>Số tiền</th>
+                  <th>Nguồn</th>
+                  <th>Độ tin cậy</th>
+                </tr>
+              </thead>
+              <tbody id="imageImportRows"></tbody>
+            </table>
+          </div>
+          <aside class="import-image-panel">
+            <div class="import-image-tabs" id="imageImportTabs"></div>
+            <img id="imageImportPreviewImg" alt="Ảnh đối chiếu" class="import-image-preview">
+          </aside>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" id="btnClearImageImport" type="button">Xóa ảnh</button>
+      <button class="btn btn-primary" id="btnConfirmImageImport" type="button">Xác nhận nhập</button>
+    </div>
+  </div>
+</div>
 
 <!-- ── DELETE CONFIRM MODAL ── -->
 <div class="modal-overlay hidden" id="modalDelete">
@@ -245,6 +226,6 @@
 <!-- ── TOAST ── -->
 <div class="toast-container" id="toastContainer"></div>
 
-<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+<script src="{{ url_for('static', filename='js/app.js') }}?v=20260716-image-import-no-overwrite"></script>
 </body>
 </html>

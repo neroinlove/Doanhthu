@@ -166,40 +166,40 @@
       "sang": 9200000,
       "toi": 3200000,
       "tien_ck": 1500000,
-      "tien_ck_thuoc": 600000,
+      "tien_ck_thuoc": 520000,
       "tien_ck_dungcu": 3900000,
       "tien_tra_hang": 0,
-      "tong": 18400000
+      "tong": 18320000
     },
     {
       "ngay": "18.6",
       "sang": 6100000,
       "toi": 6100000,
       "tien_ck": 2200000,
-      "tien_ck_thuoc": 600000,
+      "tien_ck_thuoc": 623000,
       "tien_ck_dungcu": 700000,
       "tien_tra_hang": 0,
-      "tong": 15700000
+      "tong": 15723000
     },
     {
       "ngay": "19.6",
       "sang": 7400000,
       "toi": 4700000,
       "tien_ck": 2700000,
-      "tien_ck_thuoc": 900000,
+      "tien_ck_thuoc": 877000,
       "tien_ck_dungcu": 800000,
       "tien_tra_hang": 0,
-      "tong": 16500000
+      "tong": 16477000
     },
     {
       "ngay": "20.6",
       "sang": 4400000,
       "toi": 5100000,
       "tien_ck": 4100000,
-      "tien_ck_thuoc": 1000000,
+      "tien_ck_thuoc": 968000,
       "tien_ck_dungcu": 2200000,
       "tien_tra_hang": 0,
-      "tong": 16800000
+      "tong": 16768000
     },
     {
       "ngay": "21.6",
@@ -216,40 +216,40 @@
       "sang": 8300000,
       "toi": 5800000,
       "tien_ck": 2500000,
-      "tien_ck_thuoc": 1400000,
+      "tien_ck_thuoc": 1479000,
       "tien_ck_dungcu": 700000,
       "tien_tra_hang": 0,
-      "tong": 18700000
+      "tong": 18779000
     },
     {
       "ngay": "23.6",
       "sang": 6800000,
       "toi": 5300000,
       "tien_ck": 2700000,
-      "tien_ck_thuoc": 1400000,
+      "tien_ck_thuoc": 1500000,
       "tien_ck_dungcu": 250000,
       "tien_tra_hang": 0,
-      "tong": 16450000
+      "tong": 16550000
     },
     {
       "ngay": "24.6",
       "sang": 6100000,
       "toi": 7400000,
       "tien_ck": 3800000,
-      "tien_ck_thuoc": 2300000,
+      "tien_ck_thuoc": 388000,
       "tien_ck_dungcu": 2300000,
       "tien_tra_hang": 0,
-      "tong": 21900000
+      "tong": 19988000
     },
     {
       "ngay": "25.6",
       "sang": 6400000,
       "toi": 6000000,
       "tien_ck": 3600000,
-      "tien_ck_thuoc": 0,
+      "tien_ck_thuoc": 2825000,
       "tien_ck_dungcu": 2700000,
       "tien_tra_hang": 0,
-      "tong": 18700000
+      "tong": 21525000
     },
     {
       "ngay": "26.6",
@@ -257,19 +257,19 @@
       "toi": 7500000,
       "tien_ck": 2800000,
       "tien_ck_thuoc": 2400000,
-      "tien_ck_dungcu": 0,
+      "tien_ck_dungcu": 2403000,
       "tien_tra_hang": 0,
-      "tong": 18100000
+      "tong": 20503000
     },
     {
       "ngay": "27.6",
       "sang": 8000000,
       "toi": 4800000,
       "tien_ck": 745000,
-      "tien_ck_thuoc": 3600000,
+      "tien_ck_thuoc": 2764000,
       "tien_ck_dungcu": 2600000,
       "tien_tra_hang": 0,
-      "tong": 19745000
+      "tong": 18909000
     },
     {
       "ngay": "28.6",
@@ -277,30 +277,29 @@
       "toi": 7200000,
       "tien_ck": 3900000,
       "tien_ck_thuoc": 1000000,
-      "tien_ck_dungcu": 0,
+      "tien_ck_dungcu": 1026000,
       "tien_tra_hang": 0,
-      "tong": 20000000
+      "tong": 21026000
     },
     {
       "ngay": "29.6",
-      "sang": 0,
-      "toi": 0,
+      "sang": 5800000,
+      "toi": 6100000,
       "tien_ck": 3500000,
       "tien_ck_thuoc": 200000,
       "tien_ck_dungcu": 0,
       "tien_tra_hang": 0,
-      "tong": 3700000
+      "tong": 15600000
     },
     {
       "ngay": "30.6",
-      "sang": 0,
-      "toi": 0,
-      "tien_ck": 0,
-      "tien_ck_thuoc": 0,
-      "tien_ck_dungcu": 0,
+      "sang": 7100000,
+      "toi": 5000000,
+      "tien_ck": 2992000,
+      "tien_ck_thuoc": 469000,
+      "tien_ck_dungcu": 2403000,
       "tien_tra_hang": 0,
-      "tong": 0
+      "tong": 17964000
     }
-  ],
-  "thuoc": []
+  ]
 }

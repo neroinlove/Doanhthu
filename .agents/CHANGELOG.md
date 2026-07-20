@@ -1,5 +1,21 @@
 # CHANGELOG
 
+## v1.7.4 - 2026-07-20
+- Ghi nhận sự cố reboot gây 502 khi LaunchAgent chưa được cài vào `~/Library/LaunchAgents`.
+- Thêm checklist xác minh startup: `launchctl print`, `lsof :5501`, `/health`.
+
+## v1.7.3 - 2026-07-16
+- Ghi nhận rule an toàn dữ liệu: import ảnh không ghi đè ô đã có dữ liệu nhập tay.
+- Toast import hiển thị số ô đã nhập và số ô bị bỏ qua do đã có dữ liệu.
+
+## v1.7.2 - 2026-07-16
+- Ghi nhận regression import ảnh 30 ngày không có label: map ngày theo vị trí X của cột thay vì thứ tự cột detect được.
+- Bổ sung rule tránh trượt ngày khi biểu đồ có ngày doanh thu bằng 0 hoặc cột quá thấp.
+
+## v1.7.1 - 2026-07-16
+- Ghi nhận regression OCR import ảnh: ưu tiên `value_labels` đọc trực tiếp từ ảnh trước khi dùng fallback đo chiều cao cột.
+- Thêm checklist kiểm tra riêng cho nhãn `K`, `Tr` và ảnh 30 ngày không có nhãn số trên từng cột.
+
 ## v1.7.0 - 2026-07-14
 - Bổ sung template deploy Mac mini M4 cho dự án Dashboard Doanh Thu.
 - Ghi nhận mẫu vận hành `localhost + 1 worker` khi app vẫn lưu JSON theo tháng.
