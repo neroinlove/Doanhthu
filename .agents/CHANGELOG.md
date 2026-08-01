@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## v1.7.5 - 2026-08-01
+- Rà soát đường dẫn checkout sau khi người dùng đổi vị trí repo.
+- Phát hiện nhiều bản local cùng trỏ về `neroinlove/Doanhthu`; LaunchAgent hiện vẫn chạy bản tại `~/.gemini/antigravity/scratch/doanhthu`.
+- Chưa đổi đường dẫn chạy cho tới khi xác nhận thư mục local chính, tránh chạy nhầm bản hoặc nhầm dữ liệu.
+
 ## v1.7.4 - 2026-07-20
 - Ghi nhận sự cố reboot gây 502 khi LaunchAgent chưa được cài vào `~/Library/LaunchAgents`.
 - Thêm checklist xác minh startup: `launchctl print`, `lsof :5501`, `/health`.

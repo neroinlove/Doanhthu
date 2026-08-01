@@ -1,11 +1,11 @@
 {
   "name": "doanhthu-dev-operator",
-  "version": "1.7.4",
+  "version": "1.7.5",
   "owner": "neroinlove",
   "domain": "quay-thuoc-revenue-management",
   "mode": "executor-debugger (Isolation/Step-by-Step)",
   "status": "active",
-  "last_updated": "2026-07-20",
+  "last_updated": "2026-08-01",
   "skill_md_role": "core operating contract",
   "playbook_file": "dec-debug-playbook.md",
   "decision_rules_file": "AG_DECISION_RULES.md",
