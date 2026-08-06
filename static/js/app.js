@@ -549,6 +549,13 @@ function parsePlainAmount(value) {
   return parseInt(String(value || '').replace(/\D/g, ''), 10) || 0;
 }
 
+function median(values) {
+  const sorted = values.filter(value => Number.isFinite(value) && value > 0).sort((a, b) => a - b);
+  if (!sorted.length) return 0;
+  const middle = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
+}
+
 function openImageImportModal() {
   if (!el.importEndDate.value) {
     el.importEndDate.value = toIsoDate(new Date());
@@ -672,15 +679,20 @@ async function detectRevenueBars(file, options = {}) {
   const confidence = bars.length >= 25 && bars.length <= 31 ? 85 : 65;
   const firstCenter = bars[0]?.center || 0;
   const lastCenter = bars[bars.length - 1]?.center || firstCenter;
-  const slotWidth = expectedDays > 1 && lastCenter > firstCenter
+  const centerGaps = bars.slice(1).map((bar, index) => bar.center - bars[index].center);
+  const measuredSlotWidth = median(centerGaps);
+  const slotWidth = measuredSlotWidth || (expectedDays > 1 && lastCenter > firstCenter
     ? (lastCenter - firstCenter) / (expectedDays - 1)
-    : 0;
+    : 0);
+  const anchorToEnd = expectedDays > 1 && slotWidth > 0;
 
   const detected = bars.map((bar, index) => {
     const ratio = Math.max(0, Math.min(1, (axisBottom - bar.top) / axisHeight));
     const rawAmount = ratio * maxMillion * 1_000_000;
     const dayOffset = slotWidth
-      ? Math.max(0, Math.min(expectedDays - 1, Math.round((bar.center - firstCenter) / slotWidth)))
+      ? anchorToEnd
+        ? Math.max(0, Math.min(expectedDays - 1, expectedDays - 1 + Math.round((bar.center - lastCenter) / slotWidth)))
+        : Math.max(0, Math.min(expectedDays - 1, Math.round((bar.center - firstCenter) / slotWidth)))
       : index;
     return {
       amount: Math.round(rawAmount / 1_000) * 1_000,

@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## v1.7.6 - 2026-08-06
+- Sửa lệch ngày khi ảnh 30 ngày có một cột doanh thu quá thấp không qua được bộ lọc màu.
+- Dùng khoảng cách trung vị giữa các cột thực tế và neo cột cuối vào ngày kết thúc, để cột bị thiếu ở giữa không làm dồn lệch các ngày phía sau.
+
 ## v1.7.5 - 2026-08-01
 - Rà soát đường dẫn checkout sau khi người dùng đổi vị trí repo.
 - Phát hiện nhiều bản local cùng trỏ về `neroinlove/Doanhthu`; LaunchAgent hiện vẫn chạy bản tại `~/.gemini/antigravity/scratch/doanhthu`.
