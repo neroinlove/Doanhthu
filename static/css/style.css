@@ -541,6 +541,13 @@ tbody td:first-child { text-align: left; font-weight: 600; }
   width: 140px;
   text-align: right;
 }
+.import-overwrite-option {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  white-space: nowrap;
+  font-size: .8rem;
+}
 .import-confidence {
   color: var(--muted);
   font-weight: 700;

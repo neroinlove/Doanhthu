@@ -771,6 +771,15 @@ async function rebuildImageImportRows() {
   }
 
   state.imageImportRows = nextRows.sort((a, b) => a.date.localeCompare(b.date) || a.field.localeCompare(b.field));
+  const monthCache = {};
+  for (const row of state.imageImportRows) {
+    if (!monthCache[row.month]) {
+      monthCache[row.month] = await apiGet(`/api/records/${row.month}`);
+    }
+    const existing = monthCache[row.month].quay_thuoc.find(item => item.ngay === row.ngay);
+    row.existingAmount = Number(existing?.[row.field]) || 0;
+    row.overwrite = false;
+  }
   renderImageImportPreview();
 }
 
@@ -826,6 +835,18 @@ function renderImageImportPreview() {
           value="${formatInputNumber(row.amount)}"
         >
       </td>
+      <td>${row.existingAmount ? formatInputNumber(row.existingAmount) : '<span class="text-muted">Chưa có</span>'}</td>
+      <td>
+        <label class="import-overwrite-option">
+          <input
+            type="checkbox"
+            data-import-overwrite-index="${index}"
+            ${row.overwrite ? 'checked' : ''}
+            ${row.existingAmount ? '' : 'disabled'}
+          >
+          <span>${row.existingAmount ? 'Ghi đè' : 'Nhập mới'}</span>
+        </label>
+      </td>
       <td>${row.source || '—'}</td>
       <td><span class="import-confidence">${row.confidence}%</span></td>
     </tr>
@@ -851,6 +872,13 @@ function renderImageImportPreview() {
     input.addEventListener('input', () => {
       const index = Number(input.dataset.importIndex);
       state.imageImportRows[index].amount = parsePlainAmount(input.value);
+    });
+  });
+
+  document.querySelectorAll('[data-import-overwrite-index]').forEach(input => {
+    input.addEventListener('change', event => {
+      const index = Number(event.target.dataset.importOverwriteIndex);
+      state.imageImportRows[index].overwrite = event.target.checked;
     });
   });
 }
@@ -914,6 +942,7 @@ async function confirmImageImport() {
   const monthCache = {};
   let importedCount = 0;
   let skippedCount = 0;
+  let overwrittenCount = 0;
   try {
     el.btnConfirmImageImport.classList.add('loading');
 
@@ -926,11 +955,12 @@ async function confirmImageImport() {
       const records = monthCache[row.month].quay_thuoc;
       const existingIndex = records.findIndex(item => item.ngay === row.ngay);
       const record = existingIndex >= 0 ? records[existingIndex] : buildEmptyRecord(row.ngay);
-      if (Number(record[row.field]) > 0) {
+      if (Number(record[row.field]) > 0 && !row.overwrite) {
         skippedCount += 1;
         continue;
       }
 
+      const wasOverwritten = Number(record[row.field]) > 0;
       record[row.field] = row.amount;
 
       await apiPost(`/api/records/${row.month}/quay_thuoc`, record);
@@ -940,14 +970,18 @@ async function confirmImageImport() {
         records.push(record);
       }
       importedCount += 1;
+      if (wasOverwritten) overwrittenCount += 1;
     }
 
     closeImageImportModal();
     clearImageImport();
     await loadMonth();
-    toast(skippedCount
-      ? `Đã nhập ${importedCount} ô, bỏ qua ${skippedCount} ô đã có dữ liệu`
-      : `Đã nhập ${importedCount} ô từ ảnh`);
+    const details = [
+      `Đã nhập ${importedCount} ô`,
+      overwrittenCount ? `ghi đè ${overwrittenCount} ô` : '',
+      skippedCount ? `bỏ qua ${skippedCount} ô đã có dữ liệu` : ''
+    ].filter(Boolean).join(', ');
+    toast(`${details} từ ảnh`);
   } catch (error) {
     toast(error.message, 'error');
   } finally {
