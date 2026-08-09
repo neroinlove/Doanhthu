@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## v1.7.10 - 2026-08-09
+- Khắc phục server vẫn phục vụ template cache-bust cũ sau khi cập nhật import ảnh bằng cách restart Gunicorn qua LaunchAgent.
+- Bổ sung bước xác minh URL `app.js?v=...` qua local và domain sau mỗi thay đổi frontend cần phát hành ngay.
+
 ## v1.7.9 - 2026-08-09
 - Nới vùng quét, ngưỡng màu và chiều cao tối thiểu khi fallback nhận diện cột doanh thu từ ảnh.
 - Khắc phục trường hợp CK thuốc có cột thấp hoặc ảnh nén khác màu khiến hệ thống báo không tìm thấy cột doanh thu.
