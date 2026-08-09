@@ -591,7 +591,9 @@ function loadImageFromFile(file) {
 }
 
 function isChartBarPixel(r, g, b) {
-  return r < 95 && g > 140 && b > 140 && g - r > 45 && b - r > 45 && Math.abs(g - b) < 75;
+  // Ảnh chụp từ các máy khác nhau có thể làm màu xanh ngọc tối hoặc nhạt hơn.
+  // Vẫn giữ chênh lệch xanh-đỏ để không nhầm với chữ và nền xám.
+  return r < 160 && g > 105 && b > 105 && g - r > 25 && b - r > 25 && Math.abs(g - b) < 105;
 }
 
 async function detectRevenueBars(file, options = {}) {
@@ -609,8 +611,8 @@ async function detectRevenueBars(file, options = {}) {
 
   const xStart = Math.floor(width * 0.10);
   const xEnd = Math.floor(width * 0.92);
-  const yStart = Math.floor(height * 0.24);
-  const yEnd = Math.floor(height * 0.48);
+  const yStart = Math.floor(height * 0.20);
+  const yEnd = Math.floor(height * 0.57);
   const imageData = ctx.getImageData(xStart, yStart, xEnd - xStart, yEnd - yStart);
   const data = imageData.data;
   const regionWidth = imageData.width;
@@ -634,7 +636,7 @@ async function detectRevenueBars(file, options = {}) {
     columns.push({ x, count, top, bottom });
   }
 
-  const activeThreshold = Math.max(8, Math.round(regionHeight * 0.012));
+  const activeThreshold = Math.max(4, Math.round(regionHeight * 0.008));
   const groups = [];
   let current = null;
 
@@ -656,7 +658,7 @@ async function detectRevenueBars(file, options = {}) {
   if (current) groups.push(current);
 
   const minWidth = Math.max(4, Math.round(width * 0.004));
-  const maxWidth = Math.max(24, Math.round(width * 0.045));
+  const maxWidth = Math.max(28, Math.round(width * 0.06));
   const bars = groups
     .filter(group => group.end - group.start + 1 >= minWidth && group.end - group.start + 1 <= maxWidth)
     .map(group => ({

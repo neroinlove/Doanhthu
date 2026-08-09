@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## v1.7.9 - 2026-08-09
+- Nới vùng quét, ngưỡng màu và chiều cao tối thiểu khi fallback nhận diện cột doanh thu từ ảnh.
+- Khắc phục trường hợp CK thuốc có cột thấp hoặc ảnh nén khác màu khiến hệ thống báo không tìm thấy cột doanh thu.
+
 ## v1.7.8 - 2026-08-09
 - Sửa import CK thuốc khi OCR đọc thiếu một hoặc nhiều nhãn số trên biểu đồ.
 - Chỉ dùng nhãn OCR để gán trực tiếp khi số nhãn khớp toàn bộ số ngày; trường hợp thiếu nhãn chuyển sang nhận diện vị trí cột để không dồn sai ngày.
