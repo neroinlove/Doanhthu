@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## v1.7.8 - 2026-08-09
+- Sửa import CK thuốc khi OCR đọc thiếu một hoặc nhiều nhãn số trên biểu đồ.
+- Chỉ dùng nhãn OCR để gán trực tiếp khi số nhãn khớp toàn bộ số ngày; trường hợp thiếu nhãn chuyển sang nhận diện vị trí cột để không dồn sai ngày.
+
 ## v1.7.7 - 2026-08-06
 - Bổ sung cột đối chiếu dữ liệu hiện có trong preview import ảnh.
 - Mặc định không ghi đè; người dùng có thể chọn ghi đè riêng từng ô đã có dữ liệu trước khi xác nhận nhập.
