@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## v1.7.11 - 2026-08-09
+- Hoàn nguyên fallback bắt buộc khi OCR thiếu nhãn sau khi phát hiện regression làm CK và CK dụng cụ báo không tìm thấy cột doanh thu.
+- Chỉ dùng dò pixel cho ảnh không có nhãn số OCR, khôi phục luồng import ổn định của các ví còn lại.
+
 ## v1.7.10 - 2026-08-09
 - Khắc phục server vẫn phục vụ template cache-bust cũ sau khi cập nhật import ảnh bằng cách restart Gunicorn qua LaunchAgent.
 - Bổ sung bước xác minh URL `app.js?v=...` qua local và domain sau mỗi thay đổi frontend cần phát hành ngay.

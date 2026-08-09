@@ -745,10 +745,10 @@ async function rebuildImageImportRows() {
     const endDate = item.endDate ? new Date(`${item.endDate}T00:00:00`) : fallbackEndDate;
     const labels = Array.isArray(item.valueLabels) ? item.valueLabels : [];
     const expectedDays = Number(item.rangeDays) || 0;
-    // Nhãn OCR chỉ an toàn khi đọc đủ toàn bộ số ngày trong biểu đồ.
-    // Thiếu một nhãn sẽ làm dữ liệu bị dồn sang các ngày sai vị trí.
-    const hasCompleteValueLabels = expectedDays > 0 && labels.length === expectedDays;
-    const bars = hasCompleteValueLabels
+    // Giữ luồng OCR gốc cho mọi ảnh có nhãn số; fallback dò pixel chỉ dùng
+    // khi ảnh không có nhãn để tránh làm hỏng các ví vốn đã import ổn định.
+    const hasValueLabels = labels.length > 0;
+    const bars = hasValueLabels
       ? labels.map(amount => ({
         amount: Math.round(amount / 1_000) * 1_000,
         confidence: 98
@@ -759,8 +759,8 @@ async function rebuildImageImportRows() {
         expectedDays
       });
     bars.forEach((bar, index) => {
-      const rangeDays = hasCompleteValueLabels ? bars.length : (expectedDays || bars.length);
-      const dayOffset = hasCompleteValueLabels ? index : (Number.isInteger(bar.dayOffset) ? bar.dayOffset : index);
+      const rangeDays = hasValueLabels ? bars.length : (expectedDays || bars.length);
+      const dayOffset = hasValueLabels ? index : (Number.isInteger(bar.dayOffset) ? bar.dayOffset : index);
       const date = addDays(endDate, dayOffset - rangeDays + 1);
       nextRows.push({
         id: `${item.field}-${toIsoDate(date)}`,
