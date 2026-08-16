@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## v1.7.12 - 2026-08-16
+- Sửa import biểu đồ 7 ngày khi OCR chỉ đọc được một phần nhãn số.
+- Dò đủ cột theo vị trí khi nhãn OCR thiếu, đồng thời cho phép độ rộng cột tỷ lệ với số ngày để ảnh độ phân giải hẹp không bị loại nhầm.
+
 ## v1.7.11 - 2026-08-09
 - Hoàn nguyên fallback bắt buộc khi OCR thiếu nhãn sau khi phát hiện regression làm CK và CK dụng cụ báo không tìm thấy cột doanh thu.
 - Chỉ dùng dò pixel cho ảnh không có nhãn số OCR, khôi phục luồng import ổn định của các ví còn lại.

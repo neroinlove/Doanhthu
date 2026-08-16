@@ -658,7 +658,12 @@ async function detectRevenueBars(file, options = {}) {
   if (current) groups.push(current);
 
   const minWidth = Math.max(4, Math.round(width * 0.004));
-  const maxWidth = Math.max(28, Math.round(width * 0.06));
+  // Biểu đồ 7 ngày có cột rộng hơn nhiều biểu đồ 30 ngày, nhất là khi ảnh
+  // được gửi ở độ phân giải hẹp. Giới hạn theo số ngày để không loại nhầm cột.
+  const expectedBarWidth = expectedDays > 0
+    ? Math.round(((xEnd - xStart) / expectedDays) * 0.95)
+    : 0;
+  const maxWidth = Math.max(28, Math.round(width * 0.06), expectedBarWidth);
   const bars = groups
     .filter(group => group.end - group.start + 1 >= minWidth && group.end - group.start + 1 <= maxWidth)
     .map(group => ({
@@ -745,10 +750,10 @@ async function rebuildImageImportRows() {
     const endDate = item.endDate ? new Date(`${item.endDate}T00:00:00`) : fallbackEndDate;
     const labels = Array.isArray(item.valueLabels) ? item.valueLabels : [];
     const expectedDays = Number(item.rangeDays) || 0;
-    // Giữ luồng OCR gốc cho mọi ảnh có nhãn số; fallback dò pixel chỉ dùng
-    // khi ảnh không có nhãn để tránh làm hỏng các ví vốn đã import ổn định.
-    const hasValueLabels = labels.length > 0;
-    const bars = hasValueLabels
+    // Nhãn OCR chỉ được dùng trực tiếp khi đủ số ngày. Nếu OCR thiếu nhãn,
+    // vẫn phải dò toàn bộ cột để giữ đủ ngày trong biểu đồ.
+    const hasCompleteValueLabels = expectedDays > 0 && labels.length === expectedDays;
+    const bars = hasCompleteValueLabels
       ? labels.map(amount => ({
         amount: Math.round(amount / 1_000) * 1_000,
         confidence: 98
@@ -759,8 +764,8 @@ async function rebuildImageImportRows() {
         expectedDays
       });
     bars.forEach((bar, index) => {
-      const rangeDays = hasValueLabels ? bars.length : (expectedDays || bars.length);
-      const dayOffset = hasValueLabels ? index : (Number.isInteger(bar.dayOffset) ? bar.dayOffset : index);
+      const rangeDays = hasCompleteValueLabels ? bars.length : (expectedDays || bars.length);
+      const dayOffset = hasCompleteValueLabels ? index : (Number.isInteger(bar.dayOffset) ? bar.dayOffset : index);
       const date = addDays(endDate, dayOffset - rangeDays + 1);
       nextRows.push({
         id: `${item.field}-${toIsoDate(date)}`,
