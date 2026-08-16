@@ -609,10 +609,12 @@ async function detectRevenueBars(file, options = {}) {
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
   ctx.drawImage(image, 0, 0, width, height);
 
-  const xStart = Math.floor(width * 0.10);
-  const xEnd = Math.floor(width * 0.92);
-  const yStart = Math.floor(height * 0.20);
-  const yEnd = Math.floor(height * 0.57);
+  // Không cố định vị trí biểu đồ theo một mẫu điện thoại. Vùng quét rộng hơn
+  // bao trùm các bố cục khác nhau; ngày được suy ra từ khoảng cách cột thực tế.
+  const xStart = Math.floor(width * 0.05);
+  const xEnd = Math.floor(width * 0.95);
+  const yStart = Math.floor(height * 0.12);
+  const yEnd = Math.floor(height * 0.68);
   const imageData = ctx.getImageData(xStart, yStart, xEnd - xStart, yEnd - yStart);
   const data = imageData.data;
   const regionWidth = imageData.width;

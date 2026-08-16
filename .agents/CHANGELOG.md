@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## v1.7.13 - 2026-08-16
+- Mở rộng vùng quét biểu đồ để thích ứng với bố cục và độ phân giải ảnh khác nhau giữa các điện thoại.
+- Giữ phép gán ngày dựa trên khoảng cách cột thực tế thay vì vị trí màn hình cố định.
+
 ## v1.7.12 - 2026-08-16
 - Sửa import biểu đồ 7 ngày khi OCR chỉ đọc được một phần nhãn số.
 - Dò đủ cột theo vị trí khi nhãn OCR thiếu, đồng thời cho phép độ rộng cột tỷ lệ với số ngày để ảnh độ phân giải hẹp không bị loại nhầm.
