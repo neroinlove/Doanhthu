@@ -114,8 +114,11 @@ def parse_ocr_lines(lines: list) -> dict:
     field_info = detect_import_field(texts)
 
     value_items = []
+    date_items = []
     for item in lines:
         text = str(item.get("text", ""))
+        item_x = float(item.get("x", 0))
+        item_width = float(item.get("width", 0))
         for match in re.finditer(r'(\d+(?:[.,]\d+)?)\s*(Tr|K)\b', text, flags=re.IGNORECASE):
             raw_value = float(match.group(1).replace(',', '.'))
             unit = match.group(2).lower()
@@ -125,8 +128,16 @@ def parse_ocr_lines(lines: list) -> dict:
                 "unit": unit,
                 "amount": amount,
                 "text": text,
-                "x": float(item.get("x", 0)),
+                "x": item_x + (item_width / 2),
                 "y": float(item.get("y", 0)),
+            })
+        for match in re.finditer(r'(?<!\d)(\d{1,2})/(\d{1,2})(?!\d|/\d)', text):
+            # Vision đôi khi gộp nhiều nhãn ngày vào một dòng. Chia đều vị trí
+            # trong khung OCR vẫn cho mốc X đủ chính xác để neo cột biểu đồ.
+            center_ratio = (match.start() + match.end()) / (2 * max(len(text), 1))
+            date_items.append({
+                "text": match.group(0),
+                "x": item_x + (item_width * center_ratio),
             })
 
     axis_values = [item["value"] for item in value_items if item["unit"] == "tr" and item["x"] < 0.18]
@@ -152,7 +163,7 @@ def parse_ocr_lines(lines: list) -> dict:
         range_days = safe_int(range_match.group(1))
 
     value_labels = [
-        item["amount"]
+        {"amount": item["amount"], "x": item["x"]}
         for item in sorted(
             [item for item in value_items if item["x"] >= 0.18],
             key=lambda item: item["x"]
@@ -168,6 +179,7 @@ def parse_ocr_lines(lines: list) -> dict:
         "end_date": end_date,
         "range_days": range_days,
         "value_labels": value_labels,
+        "date_labels": sorted(date_items, key=lambda item: item["x"]),
     }
 
 

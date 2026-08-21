@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## v1.7.14 - 2026-08-21
+- Neo ngày import ảnh theo nhãn ngày trên trục X thay vì suy từ cột đầu/cuối.
+- Ghép nhãn tiền OCR theo tọa độ X với cột tương ứng; nhãn tiền của cột quá thấp vẫn được nhập vào đúng ngày dù pixel không đủ để nhận diện cột.
+
 ## v1.7.13 - 2026-08-16
 - Mở rộng vùng quét biểu đồ để thích ứng với bố cục và độ phân giải ảnh khác nhau giữa các điện thoại.
 - Giữ phép gán ngày dựa trên khoảng cách cột thực tế thay vì vị trí màn hình cố định.

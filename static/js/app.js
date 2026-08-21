@@ -556,6 +556,51 @@ function median(values) {
   return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
 }
 
+function dayDifference(fromDate, toDate) {
+  const from = Date.UTC(fromDate.getFullYear(), fromDate.getMonth(), fromDate.getDate());
+  const to = Date.UTC(toDate.getFullYear(), toDate.getMonth(), toDate.getDate());
+  return Math.round((to - from) / 86_400_000);
+}
+
+function buildChartDateAnchors(rawLabels, endDate, expectedDays) {
+  const labels = Array.isArray(rawLabels) ? rawLabels : [];
+  return labels.map(label => {
+    const match = String(label.text || '').match(/^(\d{1,2})\/(\d{1,2})$/);
+    if (!match || !Number.isFinite(Number(label.x))) return null;
+    const day = Number(match[1]);
+    const month = Number(match[2]) - 1;
+    const date = new Date(endDate.getFullYear(), month, day);
+    if (date > endDate) date.setFullYear(date.getFullYear() - 1);
+    const offset = dayDifference(endDate, date);
+    if (expectedDays && (offset < -expectedDays || offset > 0)) return null;
+    return { x: Number(label.x), offset };
+  }).filter(Boolean).sort((a, b) => a.x - b.x);
+}
+
+function estimateDayOffsetFromAnchors(anchors, x, expectedDays) {
+  if (!anchors.length) return null;
+  if (anchors.length === 1) {
+    return Math.abs(anchors[0].x - x) < 0.03 ? anchors[0].offset : null;
+  }
+
+  const meanX = anchors.reduce((sum, anchor) => sum + anchor.x, 0) / anchors.length;
+  const meanOffset = anchors.reduce((sum, anchor) => sum + anchor.offset, 0) / anchors.length;
+  const denominator = anchors.reduce((sum, anchor) => sum + ((anchor.x - meanX) ** 2), 0);
+  if (!denominator) return null;
+  const slope = anchors.reduce(
+    (sum, anchor) => sum + ((anchor.x - meanX) * (anchor.offset - meanOffset)), 0
+  ) / denominator;
+  const offset = Math.round(meanOffset + (slope * (x - meanX)));
+  return Math.max(-(expectedDays - 1), Math.min(0, offset));
+}
+
+function normalizeValueLabels(rawLabels) {
+  return (Array.isArray(rawLabels) ? rawLabels : []).map(label => {
+    if (typeof label === 'number') return { amount: label, x: null };
+    return { amount: Number(label?.amount) || 0, x: Number(label?.x) };
+  }).filter(label => label.amount > 0);
+}
+
 function openImageImportModal() {
   if (!el.importEndDate.value) {
     el.importEndDate.value = toIsoDate(new Date());
@@ -599,6 +644,7 @@ function isChartBarPixel(r, g, b) {
 async function detectRevenueBars(file, options = {}) {
   const maxMillion = Number(options.maxMillion) || 6;
   const expectedDays = Number(options.expectedDays) || 0;
+  const dateAnchors = Array.isArray(options.dateAnchors) ? options.dateAnchors : [];
   const image = await loadImageFromFile(file);
   const canvas = document.createElement('canvas');
   const width = image.naturalWidth || image.width;
@@ -673,7 +719,8 @@ async function detectRevenueBars(file, options = {}) {
       center: xStart + Math.round((group.start + group.end) / 2),
       top: yStart + group.top,
       bottom: yStart + group.bottom,
-      width: group.end - group.start + 1
+      width: group.end - group.start + 1,
+      x: (xStart + Math.round((group.start + group.end) / 2)) / width
     }))
     .sort((a, b) => a.center - b.center);
 
@@ -698,7 +745,10 @@ async function detectRevenueBars(file, options = {}) {
   const detected = bars.map((bar, index) => {
     const ratio = Math.max(0, Math.min(1, (axisBottom - bar.top) / axisHeight));
     const rawAmount = ratio * maxMillion * 1_000_000;
-    const dayOffset = slotWidth
+    const anchoredDayOffset = estimateDayOffsetFromAnchors(dateAnchors, bar.x, expectedDays);
+    const dayOffset = anchoredDayOffset !== null
+      ? anchoredDayOffset
+      : slotWidth
       ? anchorToEnd
         ? Math.max(0, Math.min(expectedDays - 1, expectedDays - 1 + Math.round((bar.center - lastCenter) / slotWidth)))
         : Math.max(0, Math.min(expectedDays - 1, Math.round((bar.center - firstCenter) / slotWidth)))
@@ -710,25 +760,6 @@ async function detectRevenueBars(file, options = {}) {
       dayOffset
     };
   });
-
-  const valueLabels = Array.isArray(options.valueLabels) ? options.valueLabels : [];
-  if (valueLabels.length && valueLabels.length === detected.length) {
-    return detected.map((bar, index) => ({
-      ...bar,
-      amount: Math.round(valueLabels[index] / 1_000) * 1_000,
-      confidence: 98
-    }));
-  }
-
-  if (valueLabels.length && options.revenueTotal && valueLabels.length === detected.length - 1) {
-    const knownTotal = valueLabels.reduce((total, amount) => total + amount, 0);
-    const missingAmount = Math.max(0, options.revenueTotal - knownTotal);
-    return detected.map((bar, index) => ({
-      ...bar,
-      amount: Math.round((valueLabels[index] ?? missingAmount) / 1_000) * 1_000,
-      confidence: 96
-    }));
-  }
 
   if (options.revenueTotal) {
     const estimatedTotal = detected.reduce((total, bar) => total + bar.amount, 0);
@@ -743,6 +774,36 @@ async function detectRevenueBars(file, options = {}) {
   return detected;
 }
 
+function applyOcrValueLabels(bars, valueLabels, expectedDays, dateAnchors) {
+  const labels = normalizeValueLabels(valueLabels);
+  if (!labels.length) return bars;
+  const centers = bars.map(bar => bar.x).filter(Number.isFinite).sort((a, b) => a - b);
+  const slotWidth = median(centers.slice(1).map((center, index) => center - centers[index])) || (1 / Math.max(expectedDays, 1));
+  const unmatched = [];
+
+  labels.forEach(label => {
+    if (!Number.isFinite(label.x)) return;
+    let nearest = null;
+    bars.forEach(bar => {
+      const distance = Math.abs(bar.x - label.x);
+      if (!nearest || distance < nearest.distance) nearest = { bar, distance };
+    });
+    if (nearest && nearest.distance <= slotWidth * 0.6) {
+      nearest.bar.amount = Math.round(label.amount / 1_000) * 1_000;
+      nearest.bar.confidence = 98;
+      return;
+    }
+    unmatched.push({
+      amount: Math.round(label.amount / 1_000) * 1_000,
+      confidence: 98,
+      x: label.x,
+      dayOffset: estimateDayOffsetFromAnchors(dateAnchors, label.x, expectedDays)
+    });
+  });
+
+  return [...bars, ...unmatched].sort((a, b) => a.x - b.x);
+}
+
 async function rebuildImageImportRows() {
   const endDateValue = el.importEndDate.value;
   const fallbackEndDate = endDateValue ? new Date(`${endDateValue}T00:00:00`) : new Date();
@@ -750,24 +811,23 @@ async function rebuildImageImportRows() {
 
   for (const item of state.imageImportItems) {
     const endDate = item.endDate ? new Date(`${item.endDate}T00:00:00`) : fallbackEndDate;
-    const labels = Array.isArray(item.valueLabels) ? item.valueLabels : [];
+    const labels = normalizeValueLabels(item.valueLabels);
     const expectedDays = Number(item.rangeDays) || 0;
-    // Nhãn OCR chỉ được dùng trực tiếp khi đủ số ngày. Nếu OCR thiếu nhãn,
-    // vẫn phải dò toàn bộ cột để giữ đủ ngày trong biểu đồ.
-    const hasCompleteValueLabels = expectedDays > 0 && labels.length === expectedDays;
-    const bars = hasCompleteValueLabels
-      ? labels.map(amount => ({
-        amount: Math.round(amount / 1_000) * 1_000,
-        confidence: 98
-      }))
-      : await detectRevenueBars(item.file, {
+    const dateAnchors = buildChartDateAnchors(item.dateLabels, endDate, expectedDays);
+    const bars = applyOcrValueLabels(
+      await detectRevenueBars(item.file, {
         maxMillion: item.maxMillion || 6,
         revenueTotal: item.revenueTotal,
-        expectedDays
-      });
+        expectedDays,
+        dateAnchors
+      }),
+      labels,
+      expectedDays,
+      dateAnchors
+    );
     bars.forEach((bar, index) => {
-      const rangeDays = hasCompleteValueLabels ? bars.length : (expectedDays || bars.length);
-      const dayOffset = hasCompleteValueLabels ? index : (Number.isInteger(bar.dayOffset) ? bar.dayOffset : index);
+      const rangeDays = expectedDays || bars.length;
+      const dayOffset = Number.isInteger(bar.dayOffset) ? bar.dayOffset : index;
       const date = addDays(endDate, dayOffset - rangeDays + 1);
       nextRows.push({
         id: `${item.field}-${toIsoDate(date)}`,
