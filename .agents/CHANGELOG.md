@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## v1.7.15 - 2026-08-21
+- Thống nhất offset ngày import ảnh theo mốc ngày cuối, tránh dịch ngày hai lần.
+- Giữ tọa độ X của cột để ghép nhãn OCR đúng cột, loại ngày trùng và chặn mọi ngày nằm ngoài phạm vi hiển thị trên ảnh.
+
 ## v1.7.14 - 2026-08-21
 - Neo ngày import ảnh theo nhãn ngày trên trục X thay vì suy từ cột đầu/cuối.
 - Ghép nhãn tiền OCR theo tọa độ X với cột tương ứng; nhãn tiền của cột quá thấp vẫn được nhập vào đúng ngày dù pixel không đủ để nhận diện cột.

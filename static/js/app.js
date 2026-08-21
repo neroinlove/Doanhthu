@@ -572,7 +572,7 @@ function buildChartDateAnchors(rawLabels, endDate, expectedDays) {
     const date = new Date(endDate.getFullYear(), month, day);
     if (date > endDate) date.setFullYear(date.getFullYear() - 1);
     const offset = dayDifference(endDate, date);
-    if (expectedDays && (offset < -expectedDays || offset > 0)) return null;
+    if (expectedDays && (offset < -(expectedDays - 1) || offset > 0)) return null;
     return { x: Number(label.x), offset };
   }).filter(Boolean).sort((a, b) => a.x - b.x);
 }
@@ -750,14 +750,15 @@ async function detectRevenueBars(file, options = {}) {
       ? anchoredDayOffset
       : slotWidth
       ? anchorToEnd
-        ? Math.max(0, Math.min(expectedDays - 1, expectedDays - 1 + Math.round((bar.center - lastCenter) / slotWidth)))
-        : Math.max(0, Math.min(expectedDays - 1, Math.round((bar.center - firstCenter) / slotWidth)))
-      : index;
+        ? Math.max(-(expectedDays - 1), Math.min(0, Math.round((bar.center - lastCenter) / slotWidth)))
+        : Math.max(-(expectedDays - 1), Math.min(0, index - expectedDays + 1))
+      : index - Math.max(expectedDays || bars.length, 1) + 1;
     return {
       amount: Math.round(rawAmount / 1_000) * 1_000,
       ratio,
       confidence,
-      dayOffset
+      dayOffset,
+      x: bar.x
     };
   });
 
@@ -793,11 +794,13 @@ function applyOcrValueLabels(bars, valueLabels, expectedDays, dateAnchors) {
       nearest.bar.confidence = 98;
       return;
     }
+    const dayOffset = estimateDayOffsetFromAnchors(dateAnchors, label.x, expectedDays);
+    if (!Number.isInteger(dayOffset)) return;
     unmatched.push({
       amount: Math.round(label.amount / 1_000) * 1_000,
       confidence: 98,
       x: label.x,
-      dayOffset: estimateDayOffsetFromAnchors(dateAnchors, label.x, expectedDays)
+      dayOffset
     });
   });
 
@@ -825,11 +828,16 @@ async function rebuildImageImportRows() {
       expectedDays,
       dateAnchors
     );
+    const rangeDays = expectedDays || bars.length;
+    const firstDate = addDays(endDate, -(rangeDays - 1));
+    const itemRowsByDate = new Map();
     bars.forEach((bar, index) => {
-      const rangeDays = expectedDays || bars.length;
-      const dayOffset = Number.isInteger(bar.dayOffset) ? bar.dayOffset : index;
-      const date = addDays(endDate, dayOffset - rangeDays + 1);
-      nextRows.push({
+      const dayOffset = Number.isInteger(bar.dayOffset)
+        ? bar.dayOffset
+        : index - rangeDays + 1;
+      const date = addDays(endDate, dayOffset);
+      if (date < firstDate || date > endDate) return;
+      const row = {
         id: `${item.field}-${toIsoDate(date)}`,
         field: item.field,
         source: item.source,
@@ -838,11 +846,25 @@ async function rebuildImageImportRows() {
         ngay: recordDayKey(date),
         amount: bar.amount,
         confidence: bar.confidence
-      });
+      };
+      const existingRow = itemRowsByDate.get(row.date);
+      if (!existingRow || row.confidence > existingRow.confidence) {
+        itemRowsByDate.set(row.date, row);
+      }
     });
+    nextRows.push(...itemRowsByDate.values());
   }
 
-  state.imageImportRows = nextRows.sort((a, b) => a.date.localeCompare(b.date) || a.field.localeCompare(b.field));
+  const rowsByFieldAndDate = new Map();
+  nextRows.forEach(row => {
+    const key = `${row.field}-${row.date}`;
+    const existingRow = rowsByFieldAndDate.get(key);
+    if (!existingRow || row.confidence > existingRow.confidence) {
+      rowsByFieldAndDate.set(key, row);
+    }
+  });
+  state.imageImportRows = [...rowsByFieldAndDate.values()]
+    .sort((a, b) => a.date.localeCompare(b.date) || a.field.localeCompare(b.field));
   const monthCache = {};
   for (const row of state.imageImportRows) {
     if (!monthCache[row.month]) {
