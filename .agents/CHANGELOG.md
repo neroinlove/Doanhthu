@@ -1,5 +1,8 @@
 # CHANGELOG
 
+## v1.7.17 - 2026-08-21
+- Hiển thị phiên bản ứng dụng cố định ở góc phải dưới dashboard, lấy từ metadata phát hành.
+
 ## v1.7.16 - 2026-08-21
 - Giữ lại nhãn ngày OCR trong trạng thái ảnh import để bước ghép cột-ngày sử dụng được các mốc trục X.
 - Khắc phục cột đầu 15/08 bị dồn sang 16/08 khi cột cuối quá thấp nên không được pixel detector bắt.

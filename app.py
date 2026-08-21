@@ -26,6 +26,21 @@ os.makedirs(DATA_DIR, exist_ok=True)
 APP_HOST = os.getenv("APP_HOST", "192.168.1.88")
 APP_PORT = int(os.getenv("APP_PORT", "5501"))
 APP_DEBUG = os.getenv("APP_DEBUG", "0").lower() in {"1", "true", "yes", "on"}
+APP_METADATA_PATH = os.path.join(BASE_DIR, '.agents', 'metadata.json')
+
+def load_app_version() -> str:
+    """Đọc phiên bản hiển thị từ metadata phát hành của ứng dụng."""
+    try:
+        with open(APP_METADATA_PATH, 'r', encoding='utf-8') as f:
+            return str(json.load(f).get('version', '—'))
+    except (OSError, ValueError, json.JSONDecodeError):
+        return '—'
+
+APP_VERSION = load_app_version()
+
+@app.context_processor
+def inject_app_version():
+    return {'app_version': APP_VERSION}
 
 # ─── Helpers ────────────────────────────────────────────────────
 
