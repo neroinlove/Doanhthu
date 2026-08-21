@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## v1.7.16 - 2026-08-21
+- Giữ lại nhãn ngày OCR trong trạng thái ảnh import để bước ghép cột-ngày sử dụng được các mốc trục X.
+- Khắc phục cột đầu 15/08 bị dồn sang 16/08 khi cột cuối quá thấp nên không được pixel detector bắt.
+
 ## v1.7.15 - 2026-08-21
 - Thống nhất offset ngày import ảnh theo mốc ngày cuối, tránh dịch ngày hai lần.
 - Giữ tọa độ X của cột để ghép nhãn OCR đúng cột, loại ngày trùng và chặn mọi ngày nằm ngoài phạm vi hiển thị trên ảnh.

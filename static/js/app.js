@@ -1000,6 +1000,7 @@ async function handleImageImportFileChange(event) {
         maxMillion: Number(detected.max_million) || 6,
         revenueTotal: Number(detected.revenue_total) || 0,
         rangeDays: Number(detected.range_days) || 0,
+        dateLabels: Array.isArray(detected.date_labels) ? detected.date_labels : [],
         valueLabels: Array.isArray(detected.value_labels) ? detected.value_labels : [],
         endDate: detected.end_date || null,
         previewUrl: URL.createObjectURL(file)
