@@ -70,4 +70,10 @@ Khi prompt của user có chứa `@claude`, `@codex` hoặc `@opencode` chỉ đ
   3. Đứng chờ kết quả: `orca orchestration check --wait --types "worker_done,escalation,question" --timeout-ms 900000 --json` (lệnh chờ ở cấp OS, hoàn toàn không tốn token của model).
 - Khi nhận được tín hiệu `worker_done`, đọc outcome và tổng hợp báo cáo nghiệm thu rõ ràng cho user bằng tiếng Việt trước khi kết thúc turn.
 - Quy tắc "task đơn lẻ làm thẳng" CHỈ áp dụng khi KHÔNG có @-mention chỉ định agent khác (hoặc khi @-mention trúng chính mình).
+- `@opencode` chạy model qua dịch vụ bên ngoài (HilluAI): mọi thứ nó đọc đều rời
+  khỏi máy. Không giao cho nó việc chạm mật khẩu, Keychain, API key, token,
+  SSH/GPG key, `.env`, file credential, đăng nhập CLI, `sudo` hay cấu hình bảo mật
+  macOS; spec giao việc không được chứa secret. Phần đó coordinator tự làm cùng
+  user. Plugin `nero-security-guard.js` chặn cứng các thao tác này trong opencode;
+  worker báo bị chặn thì không giao lại bằng cách diễn đạt khác.
 <!-- nero-dev-workflow:end -->
