@@ -56,6 +56,10 @@ hoặc breaking API**.
 Hook `approval-gate.sh` chặn các lệnh này ở PreToolUse. Hook là lưới an toàn,
 không phải giấy phép: đừng tìm đường lách nó.
 
+Lời duyệt chỉ do user tự gõ. Agent không tự viết, không chuyển tiếp câu
+`Duyệt chạy …` vào terminal của agent khác; worker bị gate chặn thì escalate
+về coordinator.
+
 ### Điều phối nhiều agent
 
 Cần chạy worker có giám sát, task DAG, decision gate hay ask/reply → dùng skill
@@ -69,6 +73,17 @@ Khi prompt của user có chứa `@claude`, `@codex` hoặc `@opencode` chỉ đ
   2. Giao việc cho worker: `orca orchestration worker-start --spec "<nội dung việc cần làm>" --worktree current --agent <tên_agent> --json` (`@claude` → `claude`, `@codex` → `codex`, `@opencode` → `opencode`).
   3. Đứng chờ kết quả: `orca orchestration check --wait --types "worker_done,escalation,question" --timeout-ms 900000 --json` (lệnh chờ ở cấp OS, hoàn toàn không tốn token của model).
 - Khi nhận được tín hiệu `worker_done`, đọc outcome và tổng hợp báo cáo nghiệm thu rõ ràng cho user bằng tiếng Việt trước khi kết thúc turn.
+- Sau khi xác thực `worker_done`, trước khi xác nhận đã xử lý xong delivery,
+  coordinator phải chọn chủ sở hữu tiếp theo cho worker: chỉ tái sử dụng đúng
+  terminal/agent khi có việc tiếp nối ngay trong cùng mạch và context hiện tại
+  còn gọn, hữu ích; giữ worker chỉ khi bạn yêu cầu, hoặc mặc định gọi
+  `orca orchestration worker-release --dispatch <dispatch_id> --json`. Áp dụng
+  cho mọi agent, kể cả OpenCode/HilluAI. Nếu context gần giới hạn hoặc đã tích
+  lũy nhiều nội dung không còn liên quan, hãy release và mở session mới khi cần.
+  Không đặt ngưỡng token cố định vì giới hạn và cách tính khác nhau theo model,
+  provider. `worker_done` không tự đóng session;
+  `worker-release` đóng đúng terminal của dispatch đã settled. Không thay bằng
+  `terminal close`.
 - Quy tắc "task đơn lẻ làm thẳng" CHỈ áp dụng khi KHÔNG có @-mention chỉ định agent khác (hoặc khi @-mention trúng chính mình).
 - `@opencode` chạy model qua dịch vụ bên ngoài (HilluAI): mọi thứ nó đọc đều rời
   khỏi máy. Không giao cho nó việc chạm mật khẩu, Keychain, API key, token,
