@@ -25,15 +25,21 @@ về coordinator.
 
 ## Điều phối nhiều agent
 
-Cần chạy worker có giám sát, task DAG, decision gate hay ask/reply → dùng skill
-`orchestration` của Orca (`orca skills get orchestration`). Không tự dựng cơ chế
-điều phối riêng, không thay bằng subagent ngoài Orca.
+Sếp là **Claude ở phiên chat chính với user**. User giao việc phát triển → dùng
+skill `nero-boss`: hỏi đầu vào dự án, chia cỡ việc, chọn thợ, cho người khác
+hãng chấm, nghiệm thu. Phiên có preamble Orca (Task/Dispatch ID) là **worker**:
+chỉ làm đúng task đó, không giao việc tiếp. Codex, Antigravity, OpenCode khi
+user chat trực tiếp thì làm thẳng việc được giao, không tự dựng phòng ban.
 
-Khi prompt của user có chứa `@claude`, `@codex` hoặc `@opencode` chỉ định agent khác:
+Giao việc cho thợ luôn qua skill `orchestration` của Orca (`orca skills get
+orchestration`). Không tự dựng cơ chế điều phối riêng, không thay bằng subagent
+ngoài Orca.
+
+Khi prompt của user có chứa `@claude`, `@codex`, `@antigravity` hoặc `@opencode` chỉ định agent khác:
 - DỪNG NGAY, KHÔNG tự ý trả lời hoặc thực hiện thay.
 - Giám sát trọn gói (Supervised loop) qua Orca theo đúng 3 bước:
   1. Khởi tạo Run: `orca orchestration run-create --objective "<mô tả ngắn gọn mục tiêu>" --json`
-  2. Giao việc cho worker: `orca orchestration worker-start --spec "<nội dung việc cần làm>" --worktree current --agent <tên_agent> --json` (`@claude` → `claude`, `@codex` → `codex`, `@opencode` → `opencode`).
+  2. Giao việc cho worker: `orca orchestration worker-start --spec "<nội dung việc cần làm>" --worktree current --agent <tên_agent> --json` (`@claude` → `claude`, `@codex` → `codex`, `@antigravity` → `antigravity`, `@opencode` → `opencode`).
   3. Đứng chờ kết quả: `orca orchestration check --wait --types "worker_done,escalation,question" --timeout-ms 900000 --json` (lệnh chờ ở cấp OS, hoàn toàn không tốn token của model).
 - Khi nhận được tín hiệu `worker_done`, đọc outcome và tổng hợp báo cáo nghiệm thu rõ ràng cho user bằng tiếng Việt trước khi kết thúc turn.
 - Sau khi xác thực `worker_done`, trước khi xác nhận đã xử lý xong delivery,
@@ -47,11 +53,12 @@ Khi prompt của user có chứa `@claude`, `@codex` hoặc `@opencode` chỉ đ
   provider. `worker_done` không tự đóng session;
   `worker-release` đóng đúng terminal của dispatch đã settled. Không thay bằng
   `terminal close`.
-- Quy tắc "task đơn lẻ làm thẳng" CHỈ áp dụng khi KHÔNG có @-mention chỉ định agent khác (hoặc khi @-mention trúng chính mình).
+- Không có @-mention (hoặc @-mention trúng chính mình): sếp tự chia cỡ theo `nero-boss`; việc Nhỏ thì làm thẳng.
 - `@opencode` chạy model qua dịch vụ bên ngoài (HilluAI): mọi thứ nó đọc đều rời
   khỏi máy. Không giao cho nó việc chạm mật khẩu, Keychain, API key, token,
   SSH/GPG key, `.env`, file credential, đăng nhập CLI, `sudo` hay cấu hình bảo mật
-  macOS; spec giao việc không được chứa secret. Phần đó coordinator tự làm cùng
+  macOS, và không giao code bảo mật (auth, phân quyền, session, mã hoá); spec
+  giao việc không được chứa secret. Phần đó coordinator tự làm cùng
   user. Plugin `nero-security-guard.js` chặn cứng các thao tác này trong opencode;
   worker báo bị chặn thì không giao lại bằng cách diễn đạt khác.
 <!-- nero-dev-workflow:end -->
