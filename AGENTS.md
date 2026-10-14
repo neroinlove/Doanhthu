@@ -68,6 +68,12 @@ hãng chấm, nghiệm thu. Phiên có preamble Orca (Task/Dispatch ID) là **wo
 chỉ làm đúng task đó, không giao việc tiếp. Codex, Antigravity, OpenCode khi
 user chat trực tiếp thì làm thẳng việc được giao, không tự dựng phòng ban.
 
+Phiên sếp mặc định chạy Sonnet Medium và là **người điều phối duy nhất**: chỉ
+phiên này giao thợ và release worker. Việc nặng về suy nghĩ (lên kế hoạch việc
+Lớn, thu thập ý kiến, quyết định kiến trúc, code sườn) thì sếp giao cho một
+**worker Claude Opus**. Opus chỉ trả về văn bản hoặc code, không tự giao thợ.
+Xong thì sếp release ngay. Kế hoạch do Opus soạn vẫn do user tự ký.
+
 Giao việc cho thợ luôn qua skill `orchestration` của Orca (`orca skills get
 orchestration`). Không tự dựng cơ chế điều phối riêng, không thay bằng subagent
 ngoài Orca.
