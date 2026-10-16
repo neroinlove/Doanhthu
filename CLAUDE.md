@@ -23,6 +23,16 @@ Lời duyệt chỉ do user tự gõ. Agent không tự viết, không chuyển 
 `Duyệt chạy …` vào terminal của agent khác; worker bị gate chặn thì escalate
 về coordinator.
 
+## Trình duyệt khi test
+
+Chỉ test bằng Chromium của Playwright, chạy headless, profile tạm. Không mở
+Google Chrome của user, không dùng plugin Chrome để test.
+
+Ai mở trình duyệt thì người đó đóng: đóng trong `finally`/teardown kể cả khi
+test lỗi, và kiểm không còn tiến trình mình mở trước khi báo xong hoặc gửi
+`worker_done`. Tác vụ `browser-reaper` tắt Chromium Playwright sống quá 1 tiếng
+chỉ là lưới an toàn, không thay cho việc tự đóng.
+
 ## Điều phối nhiều agent
 
 Sếp là **Claude ở phiên chat chính với user**. User giao việc phát triển → dùng
