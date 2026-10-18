@@ -60,6 +60,43 @@ Các placeholder cần thay:
 - `__VENV_PYTHON__`
 - `__ENV_FILE__`
 
+## Chuyển service về project chính
+
+Thư mục chính: `/Users/longpham/Desktop/ProjectCode/doanhthu`. File
+`com.neroinlove.doanhthu.plist` đã chuẩn bị đường dẫn Python và
+`WorkingDirectory` về thư mục này. Bản cài trong `~/Library/LaunchAgents/`
+chỉ thay sau khi user duyệt triển khai và đồng bộ dữ liệu. User đã duyệt
+merge cấu hình; việc triển khai và đồng bộ dữ liệu vẫn chờ phê duyệt riêng.
+
+Kiểm tra ngày 18/10/2026: service còn chạy tại
+`~/.gemini/antigravity/scratch/doanhthu`; mã ứng dụng, template, static và
+nguồn OCR giống project chính. Dữ liệu tháng 01–06 giống nhau, tháng 07
+ở project chính đã cũ, tháng 08–10 chỉ có trong scratch.
+
+Kiểm tra trước triển khai đã đạt: `plutil -lint`, `git diff --check`,
+Python và dependency tải từ `.venv` của project chính. Flask test client
+đã trả HTTP 200 cho 25 GET (dashboard, báo cáo, health, danh sách tháng,
+API báo cáo, records và summary của 10 tháng) khi đọc bộ dữ liệu scratch;
+checksum nguồn không đổi. Chưa thay LaunchAgent đang cài hoặc dữ liệu thật.
+
+Trình tự sau khi được duyệt:
+
+1. Merge nhánh sửa cấu hình vào `main`; chỉ triển khai từ `main`.
+2. Dừng LaunchAgent để không phát sinh ghi dữ liệu trong lúc sao chép.
+3. Sao lưu plist đang cài và toàn bộ `data/records/` của cả hai thư mục
+   ra ngoài repo. Giữ nguyên bản scratch để có thể quay lại.
+4. Đối chiếu lại file tại thời điểm chuyển, đồng bộ JSON từ scratch về
+   project chính; không xóa file riêng của project chính. Nếu xuất hiện
+   khác biệt ngoài phạm vi đã duyệt, dừng để kiểm tra.
+5. Kiểm tra checksum dữ liệu, rồi cài plist mới và nạp lại LaunchAgent.
+6. Xác minh `launchctl print` và cwd tiến trình trỏ về project chính,
+   `/health` trả `data_dir` tại project chính; kiểm tra dashboard,
+   báo cáo và API đọc dữ liệu. Giữ IP/cổng `192.168.1.88:5501`, một worker.
+
+Nếu service mới không khởi động, khôi phục plist đã sao lưu và chạy lại
+service scratch. Nếu service mới đã nhận dữ liệu nhập, phải đối chiếu và
+bảo toàn dữ liệu mới trước khi quay lại.
+
 ## Nginx Proxy Manager
 
 Tạo Proxy Host:

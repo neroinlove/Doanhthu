@@ -86,8 +86,16 @@
   ],
   "server_status": {
     "running": true,
-    "url": "http://localhost:5001",
-    "command": "python app.py",
-    "cwd": "f:/Project/Doanhthu"
+    "url": "http://192.168.1.88:5501",
+    "command": ".venv/bin/python -m gunicorn --workers 1 --bind 192.168.1.88:5501 app:app",
+    "cwd": "/Users/longpham/.gemini/antigravity/scratch/doanhthu",
+    "verified_at": "2026-10-18",
+    "migration": {
+      "status": "awaiting_deployment_approval",
+      "target_cwd": "/Users/longpham/Desktop/ProjectCode/doanhthu",
+      "source_branch": "fix/service-project-directory",
+      "merge_approved": true,
+      "notes": "User đã duyệt merge; chưa đổi service. Chờ duyệt triển khai và đồng bộ dữ liệu trước khi sao lưu hai bộ dữ liệu, đồng bộ tháng 07–10 từ scratch, cài lại LaunchAgent và kiểm tra /health."
+    }
   }
 }

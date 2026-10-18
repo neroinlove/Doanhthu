@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## v1.7.18 - 2026-10-18
+- Cập nhật plist chuyển service về `/Users/longpham/Desktop/ProjectCode/doanhthu`; user đã duyệt merge nhánh `fix/service-project-directory`, chưa triển khai.
+- Xác nhận service thực tế vẫn chạy bản scratch; dữ liệu tháng 07–10 tại đây mới hơn project chính.
+- Bổ sung trình tự sao lưu, đồng bộ dữ liệu, xác minh và quay lại service cũ. Chờ user duyệt triển khai và ghi đè dữ liệu tháng 07 trước khi thay service.
+
 ## v1.7.17 - 2026-08-21
 - Hiển thị phiên bản ứng dụng cố định ở góc phải dưới dashboard, lấy từ metadata phát hành.
 
