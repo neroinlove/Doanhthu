@@ -98,6 +98,19 @@ Khi prompt của user có chứa `@claude`, `@codex`, `@antigravity` hoặc `@op
   1. Khởi tạo Run: `orca orchestration run-create --objective "<mô tả ngắn gọn mục tiêu>" --json`
   2. Giao việc cho worker: `orca orchestration worker-start --spec "<nội dung việc cần làm>" --worktree current --agent <tên_agent> --json` (`@claude` → `claude`, `@codex` → `codex`, `@antigravity` → `antigravity`, `@opencode` → `opencode`).
   3. Đứng chờ kết quả: `orca orchestration check --wait --types "worker_done,escalation,question" --timeout-ms 900000 --json` (lệnh chờ ở cấp OS, hoàn toàn không tốn token của model).
+- Dòng nhắc `You have N orchestration message…` chỉ để đánh thức, không
+  chứa nội dung. Phần lớn đến từ `heartbeat` của thợ. Gặp nó thì:
+  1. Chạy một lệnh `orca orchestration check --json` lấy cả lô tin, xử lý
+     hết. Lô chỉ có heartbeat thì không cần trả lời.
+  2. Xem còn thợ chạy không: `orca orchestration worker-list --run <run_id> --terminal-state active --json`.
+     Không còn thợ nào `outcome: in_progress` thì ack lô vừa xử lý
+     (`check --ack <delivery_id> --json`) rồi kết thúc lượt, không chờ.
+  3. Còn thợ chạy thì chờ tiếp bằng `orca orchestration check --ack <delivery_id> --wait --types "worker_done,escalation,question" --timeout-ms 900000 --json`:
+     heartbeat không làm lệnh này dậy.
+  Chỉ `--ack` lô đã đọc và xử lý xong; ack lô chưa đọc là bỏ sót tin.
+  Nhiều dòng nhắc dồn lại thì một lần `check` là đủ; dòng sau mà `check`
+  trả rỗng thì kết thúc lượt bằng một câu, không đọc lại file, không tóm tắt
+  lại. Đang có `check --wait` chạy thì không `check` thêm.
 - Khi nhận được tín hiệu `worker_done`, đọc outcome và tổng hợp báo cáo nghiệm thu rõ ràng cho user bằng tiếng Việt trước khi kết thúc turn.
 - Sau khi xác thực `worker_done`, trước khi xác nhận đã xử lý xong delivery,
   coordinator phải chọn chủ sở hữu tiếp theo cho worker: chỉ tái sử dụng đúng
