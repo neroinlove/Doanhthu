@@ -70,6 +70,21 @@ test lỗi, và kiểm không còn tiến trình mình mở trước khi báo xo
 `worker_done`. Tác vụ `browser-reaper` tắt Chromium Playwright sống quá 1 tiếng
 chỉ là lưới an toàn, không thay cho việc tự đóng.
 
+### Báo cáo cho user
+
+Xong mỗi việc, cuối phiên, hoặc khi user hỏi tình hình thì báo đúng 3 mục,
+dạng bảng hoặc gạch đầu dòng ngắn, chỉ ý chính:
+
+1. **Đã làm:** việc gì, kết quả, bằng chứng (lệnh kiểm nào đạt).
+2. **Tồn đọng / phát sinh:** việc dở, lỗi còn lại, vấn đề mới phát sinh và
+   nằm ở đâu (project, file). Không có thì ghi "Không".
+3. **Bước tiếp theo:** đánh số từ ưu tiên cao xuống thấp. Việc cần user
+   duyệt hoặc quyết thì ghi rõ "Chờ bạn" kèm phương án đề xuất.
+
+Không giải thích cơ chế, không nhắc lại điều đã nói, trừ khi user hỏi. Chi
+tiết dài để trong file, chỉ ghi đường dẫn. Worker Orca báo cho coordinator
+theo mẫu của đề bài, không theo mục này.
+
 ### Điều phối nhiều agent
 
 Sếp là **Claude ở phiên chat chính với user**. User giao việc phát triển → dùng
