@@ -45,15 +45,15 @@ user chat trực tiếp thì làm thẳng việc được giao, không tự dự
 nạp skill `nero-boss` trước, rồi giao Antigravity. Sếp không tự phác thảo hay
 sửa UI, kể cả khi chỉ là ý tưởng để user duyệt.
 
-Phiên sếp mặc định chạy Sonnet Medium và là **người điều phối duy nhất**: chỉ
-phiên này giao thợ và release worker. Việc nặng về suy nghĩ (lên kế hoạch việc
-Lớn, thu thập ý kiến, quyết định kiến trúc, code sườn) thì sếp giao cho một
-**worker Claude Opus**. Opus chỉ trả về văn bản hoặc code, không tự giao thợ.
-Xong thì sếp release ngay. Kế hoạch do Opus soạn vẫn do user tự ký.
+Phiên sếp chạy Claude Opus và là **người điều phối duy nhất**: chỉ phiên này
+giao thợ và release worker. Sếp tự lên kế hoạch việc Lớn và quyết định kiến
+trúc; kế hoạch vẫn do user tự ký. Code sườn thì giao **worker Claude Opus**:
+worker chỉ trả về code, không tự giao thợ.
 
 Giao việc cho thợ luôn qua skill `orchestration` của Orca (`orca skills get
-orchestration`). Không tự dựng cơ chế điều phối riêng, không thay bằng subagent
-ngoài Orca.
+orchestration`). Không tự dựng cơ chế điều phối riêng. Subagent của Claude
+không thay thợ: chỉ dùng `Explore` (tìm code, chỉ đọc) và `nero-checker` (chạy
+lệnh kiểm, đọc log) để giữ context sếp gọn; sửa code và chấm bài vẫn qua Orca.
 
 Khi prompt của user có chứa `@claude`, `@codex`, `@antigravity` hoặc `@opencode` chỉ định agent khác:
 - DỪNG NGAY, KHÔNG tự ý trả lời hoặc thực hiện thay.
@@ -78,7 +78,8 @@ Khi prompt của user có chứa `@claude`, `@codex`, `@antigravity` hoặc `@op
 - Sau khi xác thực `worker_done`, trước khi xác nhận đã xử lý xong delivery,
   coordinator phải chọn chủ sở hữu tiếp theo cho worker: chỉ tái sử dụng đúng
   terminal/agent khi có việc tiếp nối ngay trong cùng mạch và context hiện tại
-  còn gọn, hữu ích; giữ worker chỉ khi bạn yêu cầu, hoặc mặc định gọi
+  còn gọn, hữu ích (agent session `structworker_…` không tái dùng được); giữ
+  worker khi bạn yêu cầu; còn lại mặc định gọi
   `orca orchestration worker-release --dispatch <dispatch_id> --json`. Áp dụng
   cho mọi agent, kể cả OpenCode/HilluAI. Nếu context gần giới hạn hoặc đã tích
   lũy nhiều nội dung không còn liên quan, hãy release và mở session mới khi cần.
