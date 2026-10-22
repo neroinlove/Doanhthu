@@ -147,4 +147,12 @@ Khi prompt của user có chứa `@claude`, `@codex`, `@antigravity` hoặc `@op
   giao việc không được chứa secret. Phần đó coordinator tự làm cùng
   user. Plugin `nero-security-guard.js` chặn cứng các thao tác này trong opencode;
   worker báo bị chặn thì không giao lại bằng cách diễn đạt khác.
+
+### Bài học chung
+
+Lỗi do cách làm của agent, đã gặp ở ≥2 project; mỗi dòng một luật tránh, trần
+10 dòng. Chỉ sếp ghi, sửa ở repo Workflow (skill `nero-boss` § Sổ bài học).
+Lỗi riêng một project ghi vào `LESSONS.md` ở gốc project đó.
+
+(chưa có)
 <!-- nero-dev-workflow:end -->
