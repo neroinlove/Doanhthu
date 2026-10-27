@@ -8,6 +8,7 @@ import json
 import os
 import re
 import subprocess
+import sys
 import tempfile
 import unicodedata
 from datetime import datetime
@@ -21,6 +22,7 @@ BASE_DIR  = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR  = os.path.join(BASE_DIR, 'data', 'records')
 OCR_BIN   = os.path.join(BASE_DIR, 'scripts', 'ocr_image')
 OCR_SWIFT = os.path.join(BASE_DIR, 'scripts', 'ocr_image.swift')
+OCR_PY    = os.path.join(BASE_DIR, 'scripts', 'ocr_image.py')
 os.makedirs(DATA_DIR, exist_ok=True)
 
 APP_HOST = os.getenv("APP_HOST", "192.168.1.88")
@@ -315,7 +317,9 @@ def analyze_image():
     try:
         image_file.save(temp_path)
 
-        if os.path.exists(OCR_BIN):
+        if sys.platform != 'darwin':
+            cmd = [sys.executable, OCR_PY, temp_path]
+        elif os.path.exists(OCR_BIN):
             cmd = [OCR_BIN, temp_path]
         else:
             cmd = ['swift', OCR_SWIFT, temp_path]
