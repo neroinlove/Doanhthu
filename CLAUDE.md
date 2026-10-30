@@ -117,5 +117,5 @@ Lỗi do cách làm của agent, đã gặp ở ≥2 project; mỗi dòng một 
 10 dòng. Chỉ sếp ghi, sửa ở repo Workflow (skill `nero-boss` § Sổ bài học).
 Lỗi riêng một project ghi vào `LESSONS.md` ở gốc project đó.
 
-(chưa có)
+- 2026-10-30 · Thợ tự `rm` file tạm, kẹt ở hộp xin quyền → thợ không xoá file tạm ngoài trap test, ghi đường dẫn vào báo cáo cho sếp dọn (Sosanh NERO.md; Workflow run_6eba7eb29e7f T1)
 <!-- nero-dev-workflow:end -->
